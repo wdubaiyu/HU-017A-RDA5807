@@ -1,6 +1,6 @@
 # hu-017A
 
-RDA508收音机
+RDA5807收音机
 
 1. 在[淘宝](https://detail.tmall.com/item.htm?id=701902156484)买的收音机套件自己焊接后发现有bug。
 
