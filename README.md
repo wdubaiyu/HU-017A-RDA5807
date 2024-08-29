@@ -24,12 +24,7 @@ RDA508收音机
 ### 刷下注意事项
 
 1、使用ttl连接GND、RXD、TXS
-2、stc-isp 软件设置，如图。时钟频率一定要设置**27.000MHx**
-
-![]()![1](https://github.com/wdubaiyu/hu-017A/tree/main/images/1.png)
-
-![](https://github.com/wdubaiyu/hu-017A/tree/main/images/2.png)
-
+2、stc-isp 软件设置，参考images里面的图。时钟频率一定要设置**27.000MHx**
 3、点击打开程序选择固件（build目录下的HU-017A.hex）后，点击下载/编程。
     然后开关收音机。
 
