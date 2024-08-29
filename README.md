@@ -26,13 +26,15 @@ RDA508收音机
 1、使用ttl连接GND、RXD、TXS
 2、stc-isp 软件设置，如图。时钟频率一定要设置**27.000MHx**
 
-![]()![1](.\images\1.png)
+![]()![1](https://github.com/wdubaiyu/hu-017A/tree/main/images/1.png)
 
-![](.\images\2.png)
+![](https://github.com/wdubaiyu/hu-017A/tree/main/images/2.png)
 
 3、点击打开程序选择固件（build目录下的HU-017A.hex）后，点击下载/编程。
     然后开关收音机。
 
-
+代码参考：
+    [HZ1213825](https://github.com/HZ1213825/HAL_STM32F4_RDA5807M) 
+    [B站](https://www.bilibili.com/video/BV1Mb411e7re)
 
 **仅做学习和研究使用，不可作为商业用途。**
