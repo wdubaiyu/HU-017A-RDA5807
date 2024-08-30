@@ -85,9 +85,6 @@ void userInput()
 	// 自动搜台 确认开始
 	if (search_SELLP_flag > 0 && Key_NUM == 4)
 	{
-		// 数码管显示频率
-		DISPLAY_type = 10;
-		LED_HAND_MARK = 0; // 数码管设置为搜台模式
 		// 开始自动搜台
 		RDA5807M_Search_Automatic();
 		LED_FRE_REAL = sys_freq;
@@ -128,7 +125,6 @@ void userInput()
 	if (Key_NUM == 33)
 	{
 		LED_SEEK_D = 1;	   // 数码频率改变方向
-		DISPLAY_type = 10; // 数码管显示频率
 		LED_HAND_MARK = 0; // 手动搜台
 		resetSleepTime();  // 数码重置熄灭时间
 		sys_freq = RDA5807M_Seek(1);
@@ -139,7 +135,6 @@ void userInput()
 	if (Key_NUM == 44)
 	{
 		LED_SEEK_D = 0;	   // 数码频率改变方向
-		DISPLAY_type = 10; // 数码管显示频率
 		LED_HAND_MARK = 0; // 手动搜台
 		resetSleepTime();  // 数码重置熄灭时间
 		sys_freq = RDA5807M_Seek(0);
@@ -191,9 +186,6 @@ void userInput()
 		{
 			++sys_radio_index;
 		}
-
-		LED_SEEK_D = 1;	   // 数码频率改变方向
-		DISPLAY_type = 10; // 数码管展示频率
 		LED_HAND_MARK = 1; // 切换列表台
 		resetSleepTime();  // 数码重置熄灭时间
 		RDA5807M_Set_Freq(CONF_GET_RADIO_INDEX(sys_radio_index));
@@ -212,8 +204,6 @@ void userInput()
 			--sys_radio_index;
 		}
 
-		LED_SEEK_D = 0;	   // 数码频率改变方向
-		DISPLAY_type = 10; // 数码管展示频率
 		LED_HAND_MARK = 1; // 切换列表台
 		resetSleepTime();  // 数码重置熄灭时间
 		RDA5807M_Set_Freq(CONF_GET_RADIO_INDEX(sys_radio_index));
@@ -240,13 +230,13 @@ void main()
 			sys_sleep_mode = 1;
 			search_SELLP_flag == 11;
 		}
-
 		RDA5807M_Search_Automatic();
 		LED_FRE_REAL = sys_freq;
 		if (search_SELLP_flag == 11)
 		{
 			sys_sleep_mode = 0;
 		}
+		LED_HAND_MARK = 1; //  数码管设置为列表换台
 	}
 	else
 	{

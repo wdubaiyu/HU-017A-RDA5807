@@ -4,6 +4,7 @@
 #include "Delay.h"
 #include "RDA5807M.h"
 #include "I2C.h"
+#include "led/myLed.h"
 
 uint8t MUTE_STATUS = 0;
 
@@ -222,6 +223,8 @@ void RDA5807M_Set_Freq(uint16t Freq)
     RDA5807M_Write_Reg(0x03, band);
     RDA5807M_Write_Reg(0x03, band); // 需要写入两次，咱也不知道为啥
     CONF_SET_FREQ(Freq);
+    DISPLAY_type = 10;
+    sys_freq = Freq;
 }
 
 /**
@@ -362,7 +365,11 @@ void RDA5807M_Search_Automatic()
         // printf("Search_Automatic no band stop \r\n");
         return;
     }
-
+    // 控制数码管显示
+    sys_freq = LED_FRE_REAL = Start;
+    LED_SEEK_D = 1;
+    DISPLAY_type = 10;
+    LED_HAND_MARK = 0; // 数码管设置为搜台模式
     // 调整搜索开始频点
     RDA5807M_Set_Freq(Start);
     Delay(50);
@@ -482,10 +489,10 @@ void RDA5807M_Set_Output_Idle(uint8t flage)
  */
 uint8t RDA5807M_Read_RSSI(void)
 {
-    uint16t band;
-    band = RDA5807M_Read_Reg(0x0B);
-    band >>= 9;
-    return (uint8t)band;
+    uint16t temp_rssi;
+    temp_rssi = RDA5807M_Read_Reg(0x0B);
+    temp_rssi >>= 9;
+    return (uint8t)temp_rssi;
 }
 
 /**
