@@ -5,8 +5,8 @@
 #include "EEPROM.h"
 
 uint8t sys_vol = 0x05;
-//1 是关闭睡眠模式
-uint8t sys_sleep_mode = 0x01;
+// 1 是关闭睡眠模式 0开启睡眠模式
+bit sys_sleep_mode = 1;
 uint16t sys_freq = 0x21FC; // 1017
 // 当前频率对应电台的序号
 uint8t sys_radio_index = 0x00;
@@ -51,6 +51,7 @@ void CONF_SET_FREQ(uint16t freq)
     {
         IapProgramByte(addr_freq_index, sys_radio_index);
     }
+    sys_freq = freq; // 修改系统配频率
 }
 
 /**
@@ -69,7 +70,7 @@ void CONF_CHANGE_SLEEP_MODE()
     }
 
     IapEraseSector(addr_sleep_mode);
-    IapProgramByte(addr_sleep_mode, sys_sleep_mode);
+    IapProgramByte(addr_sleep_mode, 0x00 | sys_sleep_mode);
 }
 
 /**

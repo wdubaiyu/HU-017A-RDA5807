@@ -11,7 +11,7 @@ typedef unsigned short int uint16t;
 
 // 全局变量
 extern uint8t sys_vol;
-extern uint8t sys_sleep_mode;
+extern bit sys_sleep_mode;
 extern uint16t sys_freq;
 extern uint8t sys_radio_index;
 extern uint8t sys_radio_index_max;
@@ -46,7 +46,6 @@ void CONF_RADIO_PUT(uint8t index, uint16t freq);
 
 /**
  * 搜台完成,保存频道总数
- * @param 电台总数
  */
 void CONF_SET_INDEX_MAX(uint8t index);
 

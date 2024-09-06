@@ -62,15 +62,16 @@ void RDA5807M_Search_Automatic(void);
  */
 void RDA5807M_Set_Volume(uint8t vol);
 
+
 /**
- * @brief 设置静音，不持久化
- * @param mute：1是静音，0是解除静音
+ * @brief 设置静音
+ * @param Bool：0是静音，1是解除静音
  * @return 无
  */
 void RDA5807M_SetMUTE(uint8t mute);
 
 /**
- * 静音模式和非静音模式来回切换，不持久化
+ * 静音模式和非静音模式来回切换，静音不持久化
  */
 void RDA5807M_CHANGE_MUTE();
 
@@ -83,7 +84,7 @@ uint8t RDA5807M_SetMutea_status();
 
 /**
  * @brief 将输出设为空闲状态（喇叭高阻）
- * @param flage：1是空闲，0是解除空闲
+ * @param Bool：1是空闲，0是解除空闲
  * @return 无
  */
 void RDA5807M_Set_Output_Idle(uint8t flage);
@@ -98,4 +99,6 @@ uint8t RDA5807M_Read_RSSI(void);
  */
 uint16t RDA5807M_CHIPID(void);
 
+
+void RDA5807M_OFF(void);
 #endif

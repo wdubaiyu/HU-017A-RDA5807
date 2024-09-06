@@ -61,6 +61,7 @@ void RDA5807M_init(void)
     RDA5807M_Write_Reg(0x05, 0x86a5); // seek SNR 0110  --> 6  VOLUME 0101 -->5
     RDA5807M_Write_Reg(0x06, 0x8000);
     RDA5807M_Write_Reg(0x07, 0x5F1A);
+    LED_FRE_REAL = sys_freq;
 }
 
 /**
@@ -223,14 +224,13 @@ void RDA5807M_Set_Freq(uint16t Freq)
     RDA5807M_Write_Reg(0x03, band);
     RDA5807M_Write_Reg(0x03, band); // 需要写入两次，咱也不知道为啥
     CONF_SET_FREQ(Freq);
-    DISPLAY_type = 10;
-    sys_freq = Freq;
+    LED_SET_DISPLY_TYPE(10);
 }
 
 /**
  * 查询seek的snr阈值
  */
-uint8t RDA5807M_Read_SNR(void)
+uint8t RDA5807M_Read_SNR()
 {
     // 8~11 位  0~15 系统默认6
     uint16t temp_snr;
@@ -291,8 +291,10 @@ uint16t seek(uint8t direction, round)
     {
         Delay(1);
     }
+
+    // 将搜索到频率设置为播放频率
     freq = RDA5807M_Read_Freq();
-    RDA5807M_Set_Freq(RDA5807M_Read_Freq()); // 将搜索到频率设置为播放频率
+    RDA5807M_Set_Freq(freq);
     return freq;
 }
 
@@ -307,10 +309,10 @@ uint16t RDA5807M_Seek(uint8t direction)
 }
 
 /**
- * @brief 点前是否是电台
+ * @brief当前频率是否是电台
  * @return 1 = 是   0 = 否
  */
-uint8t RDA5807M_Radio_TRUE(void)
+uint8t RDA5807M_Radio_TRUE()
 {
     uint16t isRadio;
     isRadio = RDA5807M_Read_Reg(0x0B);
@@ -320,10 +322,7 @@ uint8t RDA5807M_Radio_TRUE(void)
 }
 
 /**
- * @brief Search_Automatic
- * @param 无
- * @return 搜到的电台数量
- * @date 2022-07-21 22:12:33
+ *  自动搜台并保存
  */
 void RDA5807M_Search_Automatic()
 {
@@ -368,7 +367,7 @@ void RDA5807M_Search_Automatic()
     // 控制数码管显示
     sys_freq = LED_FRE_REAL = Start;
     LED_SEEK_D = 1;
-    DISPLAY_type = 10;
+    LED_SET_DISPLY_TYPE(10);
     LED_HAND_MARK = 0; // 数码管设置为搜台模式
     // 调整搜索开始频点
     RDA5807M_Set_Freq(Start);
@@ -389,6 +388,7 @@ void RDA5807M_Search_Automatic()
             Delay(100); // 给用户听个声音
             i++;        // 最后会多加一次
         }
+        resetSleepTime();
     }
 
     i = i - 1;
@@ -404,8 +404,6 @@ void RDA5807M_Search_Automatic()
  * @brief 设置音量
  * @param Val:音量值(0-15)
  * @return 无
-
- * @date 2022-07-21 22:20:20
  */
 void RDA5807M_Set_Volume(uint8t vol)
 {
@@ -423,6 +421,7 @@ void RDA5807M_Set_Volume(uint8t vol)
         RDA5807M_SetMUTE(1);
     }
 }
+
 /**
  * @brief 设置静音
  * @param Bool：0是静音，1是解除静音
@@ -443,6 +442,9 @@ void RDA5807M_SetMUTE(uint8t mute)
     RDA5807M_Write_Reg(0x02, band);
 }
 
+/**
+ * 静音模式和非静音模式来回切换，静音不持久化
+ */
 void RDA5807M_CHANGE_MUTE()
 {
     uint16t band;
@@ -597,4 +599,9 @@ void RDA5807M_Reast(void)
 {
     RDA5807M_Write_Reg(0x02, 0x0003); // 复位
     Delay(50);
+}
+
+void RDA5807M_OFF(void)
+{
+    RDA5807M_Write_Reg(0x02,RDA5807M_Read_Reg(0x02) & 0xFFFE);
 }
