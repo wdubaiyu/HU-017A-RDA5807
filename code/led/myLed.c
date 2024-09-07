@@ -24,8 +24,6 @@ uint8t LED_SNR = 0x00;
 uint8t LED_TIMED_STANDBY = 0x00;
 // 手动搜台方向
 bit LED_SEEK_D = 1;
-// 手动搜台标志 1列表换，0搜台
-bit LED_HAND_MARK = 1;
 // 睡眠模式剩余时间
 uint16t LED_SHOW_TIME = 0x1F40; // 统计睡眠模式剩余时间8s
 
@@ -79,43 +77,31 @@ void DispayF(uint16t temp)
 // 显示频率(loop调用时候显示为递增效果)
 void DispayFRE(void)
 {
-
 	if (LED_FRE_REAL == sys_freq)
 	{
 		DispayF(LED_FRE_REAL);
 		return;
 	}
 
-	if (LED_HAND_MARK) // 列表换台
-	{
-		LED_FRE_REAL = sys_freq;
-		DispayF(sys_freq);
-		return;
-	}
-
 	// 正向  数码管频率在增加的效果
 	if (LED_SEEK_D)
 	{
-		while (LED_FRE_REAL != sys_freq)
+		++LED_FRE_REAL;
+		if (LED_FRE_REAL > 10800)
 		{
-			DispayF(++LED_FRE_REAL);
-			if (LED_FRE_REAL > 10800)
-			{
-				LED_FRE_REAL = 8700;
-			}
+			LED_FRE_REAL = 8700;
 		}
 	}
-	else if (LED_SEEK_D == 0)
+	else
 	{
-		while (LED_FRE_REAL != sys_freq)
+		--LED_FRE_REAL;
+		if (LED_FRE_REAL < 8700)
 		{
-			DispayF(--LED_FRE_REAL);
-			if (LED_FRE_REAL < 8700)
-			{
-				LED_FRE_REAL = 10800;
-			}
+			LED_FRE_REAL = 10800;
 		}
 	}
+
+	DispayF(LED_FRE_REAL);
 }
 
 // 显示音量
@@ -266,14 +252,14 @@ void resetSleepTime()
 {
 	if (sys_sleep_mode == 0)
 	{
-		LED_SHOW_TIME = 0xFA0; // 4000
+		LED_SHOW_TIME = 0x1F40; // 8秒8000
 	}
 }
 
 // 判断是否显示
 void Led_Loop()
 {
-	// 等于1 一直显示
+	// sys_sleep_mode>0一直显示
 	if (sys_sleep_mode || LED_DISPLAY_TYPE > 100)
 	{
 		DISPLY();
@@ -304,22 +290,6 @@ bit LED_NEET_DISPLY_REC()
 void LED_SET_DISPLY_TYPE(uint8t display_type)
 {
 	LED_DISPLAY_TYPE_REC = 0;
-	if (LED_DISPLAY_TYPE == display_type)
-	{
-		return;
-	}
-
-	// 根据切换显示的前后值判断存储（EEPROM） 音量 和 睡眠模式
-	if (LED_DISPLAY_TYPE == 4)
-	{ // 持久化保存 音量
-		CONF_SET_VOL(sys_vol);
-	}
-
-	if (LED_DISPLAY_TYPE == 3)
-	{ // 持久化保存 睡眠模式
-		CONF_SET_SLEEP_MODE(sys_sleep_mode);
-	}
-
 	LED_DISPLAY_TYPE = display_type;
 }
 

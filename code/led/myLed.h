@@ -9,7 +9,6 @@ extern uint8t LED_RSSI;
 extern uint8t LED_SNR;
 extern uint8t LED_TIMED_STANDBY;
 extern bit LED_SEEK_D;
-extern bit LED_HAND_MARK;
 
 // 显示数码管
 void Led_Loop();

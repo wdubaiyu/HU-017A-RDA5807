@@ -223,7 +223,6 @@ void RDA5807M_Set_Freq(uint16t Freq)
     band |= (1) << 4;             // 调频启用
     RDA5807M_Write_Reg(0x03, band);
     RDA5807M_Write_Reg(0x03, band); // 需要写入两次，咱也不知道为啥
-    CONF_SET_FREQ(Freq);
     LED_SET_DISPLY_TYPE(10);
 }
 
@@ -258,35 +257,35 @@ void RDA5807M_Set_SNR(uint8t snr)
  * @param round 是否环绕搜台
  * @return 电台频率
  */
-uint16t seek(uint8t direction, round)
+uint16t seek(uint8t direction, bit round)
 {
-    uint16t band;
+    uint16t temp_reg;
     uint16t freq;
-    band = RDA5807M_Read_Reg(0x03);
-    band &= ~(1 << 4); // 禁用调谐
-    RDA5807M_Write_Reg(0x03, band);
+    temp_reg = RDA5807M_Read_Reg(0x03);
+    temp_reg &= ~(1 << 4); // 禁用调谐
+    RDA5807M_Write_Reg(0x03, temp_reg);
 
-    band = RDA5807M_Read_Reg(0x02);
+    temp_reg = RDA5807M_Read_Reg(0x02);
     if (direction == 1)
     {
-        band |= 1 << 9; // 向上搜索
+        temp_reg |= 1 << 9; // 向上搜索
     }
     else
     {
-        band &= ~(1 << 9); // 向下搜索
+        temp_reg &= ~(1 << 9); // 向下搜索
     }
 
-    band |= 1 << 8; // 开启搜索
+    temp_reg |= 1 << 8; // 开启搜索
     if (round)
     {
-        band &= ~(1 << 7); // 环绕搜索
+        temp_reg &= ~(1 << 7); // 环绕搜索
     }
     else
     {
-        band |= 1 << 7; // 边界终止搜台
+        temp_reg |= 1 << 7; // 边界终止搜台
     }
 
-    RDA5807M_Write_Reg(0x02, band);
+    RDA5807M_Write_Reg(0x02, temp_reg);
     while ((RDA5807M_Read_Reg(0x0A) & 0x4000) == 0) // 等待搜索完成
     {
         Delay(1);
@@ -305,6 +304,7 @@ uint16t seek(uint8t direction, round)
  */
 uint16t RDA5807M_Seek(uint8t direction)
 {
+    LED_SEEK_D = direction;
     return seek(direction, 1);
 }
 
@@ -361,32 +361,30 @@ void RDA5807M_Search_Automatic()
     }
     else
     { // 没有匹配到band
-        // printf("Search_Automatic no band stop \r\n");
         return;
     }
     // 控制数码管显示
     sys_freq = LED_FRE_REAL = Start;
     LED_SEEK_D = 1;
     LED_SET_DISPLY_TYPE(10);
-    LED_HAND_MARK = 0; // 数码管设置为搜台模式
     // 调整搜索开始频点
     RDA5807M_Set_Freq(Start);
     Delay(50);
 
     // 清空eeprom中的电台数据
     CONF_RADIO_ERASE();
-    // printf("Search_Automatic start \r\n");
     // 开始搜索
     while (sys_freq != End)
     {
         // 向下搜台 ，边界终止
         sys_freq = seek(1, 0);
-        // 保存电台
+        Delay(500); // 延迟等待系统判断电台
         if (RDA5807M_Radio_TRUE())
         {
+            // 保存电台
+            Delay(500); // 给用户听个声音
             CONF_RADIO_PUT(i, sys_freq);
-            Delay(100); // 给用户听个声音
-            i++;        // 最后会多加一次
+            i++; // 最后会多加一次
         }
         resetSleepTime();
     }
@@ -396,8 +394,10 @@ void RDA5807M_Search_Automatic()
     CONF_SET_INDEX_MAX(i);
 
     sys_radio_index = 0;
-    RDA5807M_Set_Freq(CONF_GET_RADIO_INDEX(0));
-    // printf("Search_Automatic complete %bu\r\n", i);
+    LED_FRE_REAL = sys_freq = CONF_GET_RADIO_INDEX(0);
+    RDA5807M_Set_Freq(LED_FRE_REAL);
+    // 保存播放电台
+    CONF_SET_FREQ(sys_freq);
 }
 
 /**
@@ -407,11 +407,11 @@ void RDA5807M_Search_Automatic()
  */
 void RDA5807M_Set_Volume(uint8t vol)
 {
-    uint16t vol16;
-    vol16 = RDA5807M_Read_Reg(0x05);
-    vol16 &= 0xFFF0;
-    vol16 |= (vol & 0x0F);
-    RDA5807M_Write_Reg(0x05, vol16);
+    uint16t temp_reg;
+    temp_reg = RDA5807M_Read_Reg(0x05);
+    temp_reg &= 0xFFF0;
+    temp_reg |= (vol & 0x0F);
+    RDA5807M_Write_Reg(0x05, temp_reg);
 
     sys_vol = vol;
     // 修改音量时候解除静音
@@ -428,17 +428,17 @@ void RDA5807M_Set_Volume(uint8t vol)
  */
 void RDA5807M_SetMUTE(uint8t mute)
 {
-    uint16t band;
-    band = RDA5807M_Read_Reg(0x02);
+    uint16t temp_reg;
+    temp_reg = RDA5807M_Read_Reg(0x02);
     if (mute)
     {
-        band |= 1 << 14;
+        temp_reg |= 1 << 14;
     }
     else
     {
-        band &= ~(1 << 14);
+        temp_reg &= ~(1 << 14);
     }
-    RDA5807M_Write_Reg(0x02, band);
+    RDA5807M_Write_Reg(0x02, temp_reg);
 }
 
 /**
@@ -446,43 +446,44 @@ void RDA5807M_SetMUTE(uint8t mute)
  */
 void RDA5807M_CHANGE_MUTE()
 {
-    uint16t band;
+    uint16t temp_reg;
     uint8t mute;
-    band = RDA5807M_Read_Reg(0x02);
-    mute = band >> 14;
+    temp_reg = RDA5807M_Read_Reg(0x02);
+    mute = temp_reg >> 14;
     mute = (~mute) & 0x01;
     if (mute)
     {
-        band |= 1 << 14;
+        temp_reg |= 1 << 14;
         MUTE_STATUS = 1;
     }
     else
     {
-        band &= ~(1 << 14);
+        temp_reg &= ~(1 << 14);
         MUTE_STATUS = 0;
     }
-    RDA5807M_Write_Reg(0x02, band);
+    RDA5807M_Write_Reg(0x02, temp_reg);
 }
 
-/**
- * @brief 将输出设为空闲状态（喇叭高阻）
- * @param Bool：1是空闲，0是解除空闲
- * @return 无
- */
-void RDA5807M_Set_Output_Idle(uint8t flage)
-{
-    uint16t impedance;
-    impedance = RDA5807M_Read_Reg(0x02);
-    if (flage)
-    {
-        impedance &= ~(1 << 15);
-    }
-    else
-    {
-        impedance |= 1 << 15;
-    }
-    RDA5807M_Write_Reg(0x02, impedance);
-}
+// /**
+//  * @brief 将输出设为空闲状态（喇叭高阻）
+//  * @param Bool：1是空闲，0是解除空闲
+//  * @return 无
+//  */
+// void RDA5807M_Set_Output_Idle(uint8t flage)
+// {
+//     uint16t impedance;
+//     impedance = RDA5807M_Read_Reg(0x02);
+//     if (flage)
+//     {
+//         impedance &= ~(1 << 15);
+//     }
+//     else
+//     {
+//         impedance |= 1 << 15;
+//     }
+//     RDA5807M_Write_Reg(0x02, impedance);
+// }
+
 /**
  * @brief 获取当前频率的信号强度
  * @param 无
@@ -496,111 +497,99 @@ uint8t RDA5807M_Read_RSSI(void)
     return (uint8t)temp_rssi;
 }
 
-/**
- * @brief  芯片id CHIPID[7:0]  ---- 15:8
- * @param 无
- * @return CHIPID
- */
-uint16t RDA5807M_CHIPID(void)
-{
-    return RDA5807M_Read_Reg(0x00);
-}
-/**
- * @brief 设置频率段
- * @param Range：频率段，来自频率段选择组的宏定义，如BAND_0
- *  BAND = 0 Frequency = Channel Spacing (kHz) x CHAN+ 87.0 MHz
- *  BAND = 1 or 2 Frequency = Channel Spacing (kHz) x CHAN + 76.0 MHz
- *  BAND = 3 Frequency = Channel Spacing (kHz) x CHAN + 65.0 MHz
- * @return 无
+// /**
+//  * @brief  芯片id CHIPID[7:0]  ---- 15:8
+//  * @param 无
+//  * @return CHIPID
+//  */
+// uint16t RDA5807M_CHIPID(void)
+// {
+//     return RDA5807M_Read_Reg(0x00);
+// }
 
- * @date 2022-07-23 11:16:42
- */
-void RDA5807M_Set_FreqRange(uint8t Range)
-{
-    uint16t band;
-    band = RDA5807M_Read_Reg(0x03);
-    if (Range == BAND_87_108)
-    { /*0x03[3:2]=00 0x07[9]=x*/
-        band &= ~(1 << 3);
-        band &= ~(1 << 2);
-        RDA5807M_Write_Reg(0x02, band);
-    }
-    else if (Range == BAND_76_91)
-    { /*0x03[3:2]=01 0x07[9]=x*/
-        band &= ~(1 << 3);
-        band |= 1 << 2;
-        RDA5807M_Write_Reg(0x02, band);
-    }
-    else if (Range == BAND_76_108)
-    { /*0x03[3:2]=10 0x07[9]=x*/
-        band |= 1 << 3;
-        band &= ~(1 << 2);
-        RDA5807M_Write_Reg(0x02, band);
-    }
-    else if (Range == BAND_65_76)
-    { /*0x03[3:2]=11 0x07[9]=1*/
-        band |= 1 << 2;
-        band |= 1 << 3;
-        RDA5807M_Write_Reg(0x02, band);
-        band = RDA5807M_Read_Reg(0x07);
-        band |= 1 << 9;
-        RDA5807M_Write_Reg(0x07, band);
-    }
-    else if (Range == BAND_50_76)
-    { /*0x03[3:2]=11 0x07[9]=0*/
-        band |= 1 << 2;
-        band |= 1 << 3;
-        RDA5807M_Write_Reg(0x02, band);
-        band = RDA5807M_Read_Reg(0x07);
-        band &= ~(1 << 9);
-        RDA5807M_Write_Reg(0x07, band);
-    }
-}
+// /**
+//  * @brief 设置频率段
+//  * @param band：频率段，来自频率段选择组的宏定义，如BAND_0
+//  *  BAND = 0 Frequency = Channel Spacing (kHz) x CHAN+ 87.0 MHz
+//  *  BAND = 1 or 2 Frequency = Channel Spacing (kHz) x CHAN + 76.0 MHz
+//  *  BAND = 3 Frequency = Channel Spacing (kHz) x CHAN + 65.0 MHz
+//  * @return 无
 
-/**
- * @brief 设置频率步进
- * @param space_step：间隔，从频率间隔选择组宏定义里选取，如space_step_100kHz
- * @return 无
- */
-void RDA5807M_Set_Freqspace_step(uint8t SPACE)
-{
+//  * @date 2022-07-23 11:16:42
+//  */
 
-    uint16t band;
-    band = RDA5807M_Read_Reg(0x03);
-    if (SPACE == Space_100kHz)
-    { /*0x03[1:0]=00*/
-        band &= ~(1 << 1);
-        band &= ~(1 << 0);
-    }
-    else if (SPACE == Space_200kHz)
-    { /*0x03[1:0]=01*/
-        band &= ~(1 << 1);
-        band |= 1 << 0;
-    }
-    else if (SPACE == Space_50KHz)
-    { /*0x03[1:0]=10*/
-        band |= 1 << 1;
-        band &= ~(1 << 0);
-    }
-    else if (SPACE == Space_25KHz)
-    { /*0x03[1:0]=11*/
-        band |= 1 << 1;
-        band |= 1 << 0;
-    }
-    RDA5807M_Write_Reg(0x03, band);
-}
-/**
- * @brief 软件复位 Soft reset && NEW_METHOD New Demodulate Method Enable, can improve the receive sensitivity about 1dB.
- * @param 无
- * @return
- */
-void RDA5807M_Reast(void)
-{
-    RDA5807M_Write_Reg(0x02, 0x0003); // 复位
-    Delay(50);
-}
+// void RDA5807M_Set_Freqband(uint8t band)
+// {
+//     uint16t temp_reg;
+//     temp_reg = RDA5807M_Read_Reg(0x03);
+//     temp_reg &= 0xFFF3; // 1111 1111 1111 0011
+//     if (band == BAND_87_108)
+//     { /*0x03[3:2]=00 0x07[9]=x*/
+//         // temp_reg |= 0x00;
+//     }
+//     else if (band == BAND_76_91)
+//     { /*0x03[3:2]=01 0x07[9]=x*/
+//         temp_reg |= 0x01;
+//     }
+//     else if (band == BAND_76_108)
+//     { /*0x03[3:2]=10 0x07[9]=x*/
+//         temp_reg |= 0x02;
+//     }
+//     else if (band == BAND_65_76)
+//     { /*0x03[3:2]=11 0x07[9]=1*/
+//         temp_reg |= 0x03;
+//         RDA5807M_Write_Reg(0x07, RDA5807M_Read_Reg(0x07) | (~0xFDFF));
+//     }
+//     else if (band == BAND_50_76)
+//     { /*0x03[3:2]=11 0x07[9]=0*/
+//         temp_reg |= 0x03;
+//         RDA5807M_Write_Reg(0x07, RDA5807M_Read_Reg(0x07) & 0xFDFF);
+//     }
+
+//     RDA5807M_Write_Reg(0x03, temp_reg);
+// }
+
+// /**
+//  * @brief 设置频率步进
+//  * @param space_step_step：间隔，从频率间隔选择组宏定义里选取，如space_step_step_100kHz
+//  * @return 无
+//  */
+// void RDA5807M_Set_Freqspace_step_step(uint8t space_step)
+// {
+//     uint16t temp_reg;
+//     temp_reg = RDA5807M_Read_Reg(0x03);
+//     temp_reg &= 0xFFFC; // 把最后两位SPACE[1:0] 清零
+//     if (space_step == Space_100kHz)
+//     { /*0x03[1:0]=00*/
+//         // temp_reg |= 0x00;
+//     }
+//     else if (space_step == Space_200kHz)
+//     { /*0x03[1:0]=01*/
+//         temp_reg |= 0x01;
+//     }
+//     else if (space_step == Space_50KHz)
+//     { /*0x03[1:0]=10*/
+//         temp_reg |= 0x02;
+//     }
+//     else if (space_step == Space_25KHz)
+//     { /*0x03[1:0]=11*/
+//         temp_reg |= 0x03;
+//     }
+//     RDA5807M_Write_Reg(0x03, temp_reg);
+// }
 
 void RDA5807M_OFF(void)
 {
     RDA5807M_Write_Reg(0x02, RDA5807M_Read_Reg(0x02) & 0xFFFE);
 }
+
+// /**
+//  * @brief 软件复位 Soft reset && NEW_METHOD +1dB.
+//  * @param 无
+//  * @return
+//  */
+// void RDA5807M_Reast(void)
+// {
+//     RDA5807M_Write_Reg(0x02, 0x0003); // 复位
+//     Delay(50);
+// }
