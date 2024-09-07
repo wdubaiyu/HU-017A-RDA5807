@@ -32,7 +32,7 @@ void CONF_SET_FREQ(uint16t freq);
 /**
  * 保存睡眠模式
  */
-void CONF_CHANGE_SLEEP_MODE();
+void CONF_SET_SLEEP_MODE(bit sleepMode);
 
 /**
  * 清空电台(包括频道号，和频率列表)

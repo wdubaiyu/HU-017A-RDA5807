@@ -258,8 +258,7 @@ void LED_CHANGE_SLEEP_MODE()
 {
 	// 设置省电模式显示
 	LED_SET_DISPLY_TYPE(3);
-	// 保存配置
-	CONF_CHANGE_SLEEP_MODE();
+	sys_sleep_mode = ~sys_sleep_mode;
 }
 
 // 睡眠模式剩余时间重置
@@ -267,7 +266,6 @@ void resetSleepTime()
 {
 	if (sys_sleep_mode == 0)
 	{
-		// LED_SHOW_TIME = 0x1F40; //8000
 		LED_SHOW_TIME = 0xFA0; // 4000
 	}
 }
@@ -305,8 +303,24 @@ bit LED_NEET_DISPLY_REC()
 
 void LED_SET_DISPLY_TYPE(uint8t display_type)
 {
-	LED_DISPLAY_TYPE = display_type;
 	LED_DISPLAY_TYPE_REC = 0;
+	if (LED_DISPLAY_TYPE == display_type)
+	{
+		return;
+	}
+
+	// 根据切换显示的前后值判断存储（EEPROM） 音量 和 睡眠模式
+	if (LED_DISPLAY_TYPE == 4)
+	{ // 持久化保存 音量
+		CONF_SET_VOL(sys_vol);
+	}
+
+	if (LED_DISPLAY_TYPE == 3)
+	{ // 持久化保存 睡眠模式
+		CONF_SET_SLEEP_MODE(sys_sleep_mode);
+	}
+
+	LED_DISPLAY_TYPE = display_type;
 }
 
 void LED_TIMED_STANDBY_U()

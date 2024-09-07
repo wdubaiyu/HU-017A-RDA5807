@@ -24,12 +24,9 @@ uint16t CONF_READ_RAIDO_FREQ(uint16t addr)
 
 void CONF_SET_VOL(uint8t vol)
 {
-    if (sys_vol != vol)
-    {
-        IapEraseSector(addr_vol);
-        IapProgramByte(addr_vol, vol & 0x00FF);
-        sys_vol = vol & 0x00FF;
-    }
+    IapEraseSector(addr_vol);
+    IapProgramByte(addr_vol, vol & 0x00FF);
+    sys_vol = vol & 0x00FF;
 }
 
 /**
@@ -51,26 +48,16 @@ void CONF_SET_FREQ(uint16t freq)
     {
         IapProgramByte(addr_freq_index, sys_radio_index);
     }
-    sys_freq = freq; // 修改系统配频率
 }
 
 /**
  * 切换 占用一个字节
  */
-void CONF_CHANGE_SLEEP_MODE()
+void CONF_SET_SLEEP_MODE(bit sleepMode)
 {
-    // 读取系统睡眠模式
-    if (IapReadByte(addr_sleep_mode) & 0x01)
-    {
-        sys_sleep_mode = 0;
-    }
-    else
-    {
-        sys_sleep_mode = 1;
-    }
-
     IapEraseSector(addr_sleep_mode);
-    IapProgramByte(addr_sleep_mode, 0x00 | sys_sleep_mode);
+    IapProgramByte(addr_sleep_mode, 0x00 | sleepMode);
+    sys_sleep_mode = sleepMode;
 }
 
 /**

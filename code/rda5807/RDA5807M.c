@@ -412,9 +412,8 @@ void RDA5807M_Set_Volume(uint8t vol)
     vol16 &= 0xFFF0;
     vol16 |= (vol & 0x0F);
     RDA5807M_Write_Reg(0x05, vol16);
-    // 持久化保存
-    CONF_SET_VOL(vol);
 
+    sys_vol = vol;
     // 修改音量时候解除静音
     if (!MUTE_STATUS)
     {
@@ -603,5 +602,5 @@ void RDA5807M_Reast(void)
 
 void RDA5807M_OFF(void)
 {
-    RDA5807M_Write_Reg(0x02,RDA5807M_Read_Reg(0x02) & 0xFFFE);
+    RDA5807M_Write_Reg(0x02, RDA5807M_Read_Reg(0x02) & 0xFFFE);
 }

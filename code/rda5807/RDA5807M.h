@@ -99,6 +99,8 @@ uint8t RDA5807M_Read_RSSI(void);
  */
 uint16t RDA5807M_CHIPID(void);
 
-
+/**
+ * 关闭芯片
+ */
 void RDA5807M_OFF(void);
 #endif
