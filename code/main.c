@@ -253,8 +253,9 @@ void userInput(uint8t Key_num)
 		LED_FRE_REAL = CONF_GET_RADIO_INDEX(sys_radio_index);
 		RDA5807M_Set_Freq(LED_FRE_REAL);
 		// 延迟保存频率配置
-		sys_write_freq_flag = 1;
 		confg_write_count = 0;
+		config_write_flag = 0;
+		sys_write_freq_flag = 1;
 		return;
 	}
 }
@@ -330,6 +331,7 @@ void main()
 		{
 			CONF_WRITE();
 			// 开启配置写入功能
+			confg_write_count = 0;
 			config_write_flag = 0;
 		}
 	}

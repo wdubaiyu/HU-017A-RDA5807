@@ -2,7 +2,7 @@
 #define __KEY_H__
 
 #define KEY_DELAY_TIME 20
-#define KEY_LONG_TIME 600
+#define KEY_LONG_TIME 1000
 
 /**
 
