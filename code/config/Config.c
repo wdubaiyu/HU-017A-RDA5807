@@ -53,7 +53,7 @@ void CONF_SET_VOL(uint8t vol)
 }
 
 /**
- * 持久化音量当前电台（频率和索引）
+ * 持久化当前电台（频率和索引）
  */
 void CONF_SET_FREQ(uint16t freq)
 {
