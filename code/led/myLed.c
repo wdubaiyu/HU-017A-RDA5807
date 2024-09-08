@@ -248,7 +248,7 @@ void LED_CHANGE_SLEEP_MODE()
 }
 
 // 睡眠模式剩余时间重置
-void resetSleepTime()
+void LED_RESET_SLEEP_TIME()
 {
 	if (sys_sleep_mode == 0)
 	{
@@ -287,9 +287,27 @@ bit LED_NEET_DISPLY_REC()
 	return 0;
 }
 
+
 void LED_SET_DISPLY_TYPE(uint8t display_type)
 {
 	LED_DISPLAY_TYPE_REC = 0;
+	if (LED_DISPLAY_TYPE == display_type)
+	{
+		return;
+	}
+
+	// 需要持久化保存 音量
+	if (display_type == 4)
+	{
+		sys_write_vol_flag = 1;
+	}
+
+	// 需要持久化保存 睡眠模式
+	if (display_type == 3)
+	{
+		sys_write_sleep_flag = 1;
+	}
+
 	LED_DISPLAY_TYPE = display_type;
 }
 

@@ -386,7 +386,7 @@ void RDA5807M_Search_Automatic()
             CONF_RADIO_PUT(i, sys_freq);
             i++; // 最后会多加一次
         }
-        resetSleepTime();
+        LED_RESET_SLEEP_TIME();
     }
 
     i = i - 1;

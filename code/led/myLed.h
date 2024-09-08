@@ -14,9 +14,11 @@ extern bit LED_SEEK_D;
 void Led_Loop();
 
 // les 睡眠时间重置
-void resetSleepTime();
+void LED_RESET_SLEEP_TIME();
 void LED_CHANGE_SLEEP_MODE();
 bit LED_NEET_DISPLY_REC();
+
+//修改显示类型
 void LED_SET_DISPLY_TYPE(uint8t display_type);
 
 // 省电模式

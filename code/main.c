@@ -12,21 +12,27 @@
 // （自动搜台设置==11）
 // （定时关机设置==21）
 uint8t key_function_flag;
-// CONF_WRITE 触发标记
-bit config_write_flag;
-// CONF_WRITE 触发标记计数
-uint16t confg_write_count;
 
 // 电源状态（0正常，1关机倒计时，2已关机）
 uint8t POWER_STATUS;
+
+// 需要系统写
+bit conf_write_flag;
+
+void triggerWriteFreq()
+{
+	sys_write_freq_flag = 1;
+	CONF_WRITE();
+	conf_write_flag = 0;
+}
 
 // 按键触发功能
 void userInput(uint8t Key_num)
 {
 	// 有按键操作时重置睡眠时间
-	resetSleepTime();
+	LED_RESET_SLEEP_TIME();
 
-	if (key_function_flag > 10)
+	if (key_function_flag > 10) // 功能菜单触发后不响应基础操作
 	{
 		// 触发功能后按了V+
 		if (Key_num == 1)
@@ -134,9 +140,6 @@ void userInput(uint8t Key_num)
 	if (Key_num == 12)
 	{
 		LED_CHANGE_SLEEP_MODE();
-		confg_write_count = 0;
-		config_write_flag = 0;
-		sys_write_sleep_flag = 1;
 		return;
 	}
 
@@ -197,9 +200,6 @@ void userInput(uint8t Key_num)
 		if (sys_vol + 1 < 16)
 		{
 			RDA5807M_Set_Volume(sys_vol + 1);
-			confg_write_count = 0;
-			config_write_flag = 0;
-			sys_write_vol_flag = 1;
 		}
 		return;
 	}
@@ -211,9 +211,6 @@ void userInput(uint8t Key_num)
 		if (sys_vol > 0)
 		{
 			RDA5807M_Set_Volume(sys_vol - 1);
-			confg_write_count = 0;
-			config_write_flag = 0;
-			sys_write_vol_flag = 1;
 		}
 		return;
 	}
@@ -231,10 +228,7 @@ void userInput(uint8t Key_num)
 		}
 		LED_FRE_REAL = CONF_GET_RADIO_INDEX(sys_radio_index);
 		RDA5807M_Set_Freq(LED_FRE_REAL);
-		// 延迟保存频率配置
-		confg_write_count = 0;
-		config_write_flag = 0;
-		sys_write_freq_flag = 1;
+		triggerWriteFreq();
 		return;
 	}
 	// F-
@@ -252,10 +246,8 @@ void userInput(uint8t Key_num)
 
 		LED_FRE_REAL = CONF_GET_RADIO_INDEX(sys_radio_index);
 		RDA5807M_Set_Freq(LED_FRE_REAL);
-		// 延迟保存频率配置
-		confg_write_count = 0;
-		config_write_flag = 0;
-		sys_write_freq_flag = 1;
+		// 需要写立即写配置
+		triggerWriteFreq();
 		return;
 	}
 }
@@ -271,7 +263,7 @@ void InitSystem()
 	// 初始化收音机
 	RDA5807M_init();
 	// 打开数码管显示、键盘轮询
-	resetSleepTime();
+	LED_RESET_SLEEP_TIME();
 	Timer0Init();
 	Delay(8);
 
@@ -327,12 +319,11 @@ void main()
 			userInput(Key_num);
 		}
 
-		if (config_write_flag)
+		// 主程序持久化触发（保护音量和睡眠模式）
+		if (conf_write_flag)
 		{
 			CONF_WRITE();
-			// 开启配置写入功能
-			confg_write_count = 0;
-			config_write_flag = 0;
+			conf_write_flag = 0;
 		}
 	}
 }
@@ -357,9 +348,8 @@ void Timer0_Rountine(void) interrupt 1
 		if (++LED_DISPLAY_TYPE_REC >= 0x7D0)
 		{
 			LED_SET_DISPLY_TYPE(10);
-			// 切换回频率显示时触发一次持久化
-			config_write_flag = 1;
-			confg_write_count = 0;
+			// 数码管恢复显示时触发写操作
+			conf_write_flag = 1;
 		}
 	}
 	// 定时关机功能开启,循环减时间
@@ -370,13 +360,6 @@ void Timer0_Rountine(void) interrupt 1
 			LED_TIMED_STANDBY -= 1;
 			timed_stanby_count = 0;
 		}
-	}
-
-	if (config_write_flag == 0 && (++confg_write_count > 3000))
-	{
-		// 触发写配置，重置计数
-		config_write_flag = 1;
-		confg_write_count = 0;
 	}
 
 	TL0 = 0x88; // 设置定时初值

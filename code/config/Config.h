@@ -28,7 +28,7 @@ extern bit sys_write_sleep_flag;
 uint8t CONF_SYS_INIT(void);
 
 /**
- * 写频率到eeprom
+ * 持久化音量当前电台（频率和索引）
  */
 void CONF_SET_FREQ(uint16t freq);
 
