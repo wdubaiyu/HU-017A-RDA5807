@@ -343,9 +343,9 @@ void Timer0_Rountine(void) interrupt 1
 	Key_Loop();
 
 	// 是否需要显示恢复为频率
-	if (LED_NEET_DISPLY_REC())
+	if (LED_DISPLY_NEET_REC())
 	{
-		if (++LED_DISPLAY_TYPE_REC >= 0x7D0)
+		if (++LED_DISPLAY_REC_COUNT >= 0x7D0)
 		{
 			LED_SET_DISPLY_TYPE(10);
 			// 数码管恢复显示时触发写操作

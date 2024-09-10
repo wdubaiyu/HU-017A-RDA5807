@@ -17,7 +17,7 @@ uint8t code NixieTableDp[] = {
 	0xC7, 0x89};
 
 uint16t LED_FRE_REAL = 8700;
-uint16t LED_DISPLAY_TYPE_REC = 0x00;
+uint16t LED_DISPLAY_REC_COUNT = 0x00;
 uint8t LED_DISPLAY_TYPE = 0x0A;
 uint8t LED_RSSI = 0x00;
 uint8t LED_SNR = 0x00;
@@ -277,7 +277,7 @@ void Led_Loop()
 	}
 }
 
-bit LED_NEET_DISPLY_REC()
+bit LED_DISPLY_NEET_REC()
 {
 	if (LED_DISPLAY_TYPE < 100)
 	{
@@ -290,7 +290,7 @@ bit LED_NEET_DISPLY_REC()
 
 void LED_SET_DISPLY_TYPE(uint8t display_type)
 {
-	LED_DISPLAY_TYPE_REC = 0;
+	LED_DISPLAY_REC_COUNT = 0x00;
 	if (LED_DISPLAY_TYPE == display_type)
 	{
 		return;
