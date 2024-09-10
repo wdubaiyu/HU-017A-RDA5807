@@ -7,6 +7,7 @@
 uint8t sys_vol = 0x05;
 // 0一段时间后休眠 1一直显示
 bit sys_sleep_mode;
+bit sys_poll_mode = 0;
 uint16t sys_freq = 0x21FC; // 1017
 
 // 当前频率对应电台的序号
@@ -16,6 +17,7 @@ uint8t sys_radio_index_max = 0x00;
 bit sys_write_freq_flag = 0;
 bit sys_write_vol_flag = 0;
 bit sys_write_sleep_flag = 0;
+bit sys_write_poll_flag = 0;
 
 /**
  * 从EEPROM中读取存储的电台频率
@@ -77,10 +79,11 @@ void CONF_SET_FREQ(uint16t freq)
 /**
  * 持久化睡眠模式
  */
-void CONF_SET_SLEEP_RSSI()
+void CONF_SET_SLEEP_POLL()
 {
     IapEraseSector(addr_sleep_mode);
     IapProgramByte(addr_sleep_mode, 0x00 | sys_sleep_mode);
+    IapProgramByte(addr_poll_mode, 0x00 | sys_poll_mode);
 }
 
 void CONF_WRITE(void)
@@ -97,9 +100,9 @@ void CONF_WRITE(void)
         sys_write_vol_flag = 0;
     }
 
-    if (sys_write_sleep_flag)
+    if (sys_write_sleep_flag || sys_write_poll_flag)
     {
-        CONF_SET_SLEEP_RSSI();
+        CONF_SET_SLEEP_POLL();
         sys_write_sleep_flag = 0;
     }
 }
@@ -160,6 +163,17 @@ uint8t CONF_SYS_INIT(void)
     else
     {
         sys_sleep_mode = 0;
+    }
+
+    // 从eeprom获取POLL模式纠正
+    sys_poll_mode = IapReadByte(addr_poll_mode);
+    if (sys_poll_mode)
+    {
+        sys_poll_mode = 1;
+    }
+    else
+    {
+        sys_poll_mode = 0;
     }
 
     // 读取电台最大索引（0~254有效），255没搜索过

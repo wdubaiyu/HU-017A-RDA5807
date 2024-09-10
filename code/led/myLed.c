@@ -161,6 +161,11 @@ void DispalCancel()
 	DisplayNUM(0xFF, 0xFF, 26, 26, 0xFF);
 }
 
+void DispayPOLL()
+{
+	DisplayNUM(0x17, 0xFF, 0xFF, sys_poll_mode, 0xFF);
+}
+
 // 显示数字 内部使用
 void DisplayNUM(uint8t a, b, c, d, dp)
 {
@@ -233,6 +238,8 @@ void DISPLY()
 		DispaySELLP(); // 展示睡眠模式
 	if (LED_DISPLAY_TYPE == 4)
 		DispayVl(); // 音量
+	if (LED_DISPLAY_TYPE == 5)
+		DispayPOLL(); // 展示POLL
 
 	if (LED_DISPLAY_TYPE == 101)
 		DispaySNR(); // 展示SNR
@@ -277,17 +284,6 @@ void Led_Loop()
 	}
 }
 
-bit LED_DISPLY_NEET_REC()
-{
-	if (LED_DISPLAY_TYPE < 100)
-	{
-		return 1;
-	}
-
-	return 0;
-}
-
-
 void LED_SET_DISPLY_TYPE(uint8t display_type)
 {
 	LED_DISPLAY_REC_COUNT = 0x00;
@@ -309,6 +305,11 @@ void LED_SET_DISPLY_TYPE(uint8t display_type)
 	}
 
 	LED_DISPLAY_TYPE = display_type;
+}
+
+uint8t LED_GET_DISPLY_TYPE()
+{
+	return LED_DISPLAY_TYPE;
 }
 
 void LED_TIMED_STANDBY_U()

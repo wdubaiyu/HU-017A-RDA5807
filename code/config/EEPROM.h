@@ -12,6 +12,8 @@
 
 // 存放睡眠模式
 #define addr_sleep_mode 0x0400
+// 存放POLL模式
+#define addr_poll_mode 0x0402
 
 // 存放电台最大数量
 #define addr_radio 0x0600

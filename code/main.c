@@ -18,6 +18,7 @@ uint8t POWER_STATUS;
 
 // 需要系统写
 bit conf_write_flag;
+bit rssi_read_flag;
 
 void triggerWriteFreq()
 {
@@ -133,13 +134,20 @@ void userInput(uint8t Key_num)
 		return;
 	}
 
-	/**
-	 * 下面是功能出发区域
-	 */
+	///////////////////////////////////////////////////////////////功能出发区域///////////////////
 	// K12 设置省电模式（一定时间后关闭数码管）
 	if (Key_num == 12)
 	{
 		LED_CHANGE_SLEEP_MODE();
+		return;
+	}
+
+	// K13 自动搜台 触发
+	if (Key_num == 13)
+	{
+		LED_SNR = RDA5807M_Read_SNR();
+		key_function_flag = 11;
+		LED_SET_DISPLY_TYPE(101); // 显示snr设置
 		return;
 	}
 
@@ -153,23 +161,18 @@ void userInput(uint8t Key_num)
 		return;
 	}
 
-	// K13 自动搜台 触发
-	if (Key_num == 13)
-	{
-		LED_SNR = RDA5807M_Read_SNR();
-		key_function_flag = 11;
-		LED_SET_DISPLY_TYPE(101); // 显示snr设置
-		return;
-	}
-
-	// K14 切换rssi显示
+	// K14 切换POLL显示
 	if (Key_num == 14)
 	{
-		LED_RSSI = RDA5807M_Read_RSSI();
-		LED_SET_DISPLY_TYPE(2);
+		sys_poll_mode = ~sys_poll_mode;
+		sys_write_poll_flag = 1;
+		LED_SET_DISPLY_TYPE(5);
 		return;
 	}
 
+	///////////////////////////////////////////////////////////////功能出发区域///////////////////
+
+	//////////////////////////////////////////////////////////////常用操作区域
 	// K33 手动搜下一个台
 	if (Key_num == 33)
 	{
@@ -276,7 +279,6 @@ void InitSystem()
 		LED_FRE_REAL = sys_freq;
 		RDA5807M_Set_Freq(sys_freq);
 	}
-
 	// 设置系统音量
 	RDA5807M_Set_Volume(sys_vol);
 }
@@ -290,6 +292,13 @@ void main()
 	// printf("power on \r\n");
 	while (1)
 	{
+		if (rssi_read_flag)
+		{
+			LED_RSSI = RDA5807M_Read_RSSI();
+			LED_SET_DISPLY_TYPE(2);
+			rssi_read_flag = 0;
+		}
+
 		// 读取用户按键输入
 		Key_num = POP_KEY();
 
@@ -334,6 +343,7 @@ void main()
 void Timer0_Rountine(void) interrupt 1
 {
 	static uint16t timed_stanby_count;
+	uint8t led_type = LED_GET_DISPLY_TYPE();
 	// 不是关机状态才显示数码管
 	if (POWER_STATUS < 2)
 	{
@@ -342,16 +352,27 @@ void Timer0_Rountine(void) interrupt 1
 
 	Key_Loop();
 
-	// 是否需要显示恢复为频率
-	if (LED_DISPLY_NEET_REC())
+	if (led_type != 10)
 	{
-		if (++LED_DISPLAY_REC_COUNT >= 0x7D0)
+		// 是否需要显示恢复为频率
+		if (led_type < 100)
 		{
-			LED_SET_DISPLY_TYPE(10);
-			// 数码管恢复显示时触发写操作
-			conf_write_flag = 1;
+			if (++LED_DISPLAY_REC_COUNT >= LED_REC_TIME)
+			{
+				LED_SET_DISPLY_TYPE(10);
+				// 数码管恢复显示时触发写操作
+				conf_write_flag = 1;
+			}
 		}
 	}
+	else if (sys_poll_mode) // 显示的是10频率，开启了rssi轮询显示
+	{
+		if (++LED_DISPLAY_REC_COUNT >= LED_REC_TIME)
+		{
+			rssi_read_flag = 1;
+		}
+	}
+
 	// 定时关机功能开启,循环减时间
 	if (POWER_STATUS == 1)
 	{
