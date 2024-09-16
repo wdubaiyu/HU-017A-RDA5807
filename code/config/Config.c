@@ -8,7 +8,7 @@ uint8t sys_vol = 0x05;
 // 0一段时间后休眠 1一直显示
 bit sys_sleep_mode;
 bit sys_poll_mode = 0;
-uint16t sys_freq = 0x21FC; // 1017
+uint16t sys_freq = 0x21FC; // 8700
 
 // 当前频率对应电台的序号
 uint8t sys_radio_index = 0x00;
@@ -127,7 +127,7 @@ void CONF_RADIO_PUT(uint8t index, uint16t freq)
     freq_array[1] = freq;
     temp_addr = addr_radio_list + index * 2;
     IapProgramByte(temp_addr, freq_array[0]);
-    Delay_Ms_(2);
+    Delay(4);
     IapProgramByte(temp_addr + 1, freq_array[1]);
 
     IapReadArrayByte(temp_addr, freq_array_read);
@@ -145,7 +145,7 @@ void CONF_SET_INDEX_MAX(uint8t index)
     IapProgramByte(addr_radio, index);
 }
 
-uint8t CONF_SYS_INIT(void)
+bit CONF_SYS_INIT(void)
 {
     // 从eeprom获取音量并纠正
     sys_vol = IapReadByte(addr_vol);
@@ -155,26 +155,10 @@ uint8t CONF_SYS_INIT(void)
     }
 
     // 从eeprom获取睡眠模式纠正
-    sys_sleep_mode = IapReadByte(addr_sleep_mode);
-    if (sys_sleep_mode)
-    {
-        sys_sleep_mode = 1;
-    }
-    else
-    {
-        sys_sleep_mode = 0;
-    }
+    sys_sleep_mode = IapReadByte(addr_sleep_mode) & 0x01;
 
     // 从eeprom获取POLL模式纠正
-    sys_poll_mode = IapReadByte(addr_poll_mode);
-    if (sys_poll_mode)
-    {
-        sys_poll_mode = 1;
-    }
-    else
-    {
-        sys_poll_mode = 0;
-    }
+    sys_poll_mode = IapReadByte(addr_poll_mode) & 0x01;
 
     // 读取电台最大索引（0~254有效），255没搜索过
     sys_radio_index_max = IapReadByte(addr_radio);

@@ -55,10 +55,10 @@ void RDA5807M_init(void)
     RDA5807M_Write_Reg(0x02, 0x0002); // reset
     Delay(50);
     RDA5807M_Write_Reg(0x02, 0xc001);
-    Delay(600);
-    RDA5807M_Write_Reg(0x03, 0x0010); // space 00 100kHz band 00 87-108MHz  （中国band）
+    Delay(50);
+    RDA5807M_Write_Reg(0x03, 0x0010 | ((sys_freq - 8700) / 10) << 6); // space 00 100kHz band 00 87-108MHz  （中国band）
     RDA5807M_Write_Reg(0x04, 0x0400);
-    RDA5807M_Write_Reg(0x05, 0x86a5); // seek SNR 0110  --> 6  VOLUME 0101 -->5
+    RDA5807M_Write_Reg(0x05, 0x86a0 | sys_vol); // seek SNR 0110  --> 6
     RDA5807M_Write_Reg(0x06, 0x8000);
     RDA5807M_Write_Reg(0x07, 0x5F1A);
     LED_FRE_REAL = sys_freq;
@@ -116,11 +116,11 @@ uint16t RDA5807M_FreqToChan(uint16t Freq)
     if (band == 0 /*0b00*/)
         Space = 10;
     else if (band == 1 /*0b01*/)
-        Space = 5;
-    else if (band == 2 /*0b10*/)
         Space = 20;
+    else if (band == 2 /*0b10*/)
+        Space = 5;
     else if (band == 3 /*0b11*/)
-        Space = 40;
+        Space = 2; // 有问题
     else
         return 0;
 
@@ -182,11 +182,11 @@ uint16t RDA5807M_ChanToFreq(uint16t Chan)
     if (band == 0 /*0b00*/)
         Space = 10;
     else if (band == 1 /*0b01*/)
-        Space = 5;
-    else if (band == 2 /*0b10*/)
         Space = 20;
+    else if (band == 2 /*0b10*/)
+        Space = 5;
     else if (band == 3 /*0b11*/)
-        Space = 80;
+        Space = 2;
     else
         return 0;
     band = Start + Chan * Space;
@@ -203,9 +203,9 @@ uint16t RDA5807M_ChanToFreq(uint16t Chan)
  */
 uint16t RDA5807M_Read_Freq(void)
 {
-    uint16t Chan = 0;
-    Chan = RDA5807M_Read_Reg(0x0A) & 0x03FF;
-    return RDA5807M_ChanToFreq(Chan);
+    uint16t chan = 0;
+    chan = RDA5807M_Read_Reg(0x0A) & 0x03FF;
+    return RDA5807M_ChanToFreq(chan);
 }
 /**
  * @brief 设置频率值
@@ -216,10 +216,10 @@ uint16t RDA5807M_Read_Freq(void)
  */
 void RDA5807M_Set_Freq(uint16t Freq)
 {
-    uint16t Chan = RDA5807M_FreqToChan(Freq); // 先转化为信道值
+    uint16t chan = RDA5807M_FreqToChan(Freq); // 先转化为信道值
     uint16t band = RDA5807M_Read_Reg(0x03);
     band &= 0x003F;               // 清空信道值
-    band |= (Chan & 0x03FF) << 6; // 写入信道值
+    band |= (chan & 0x03FF) << 6; // 写入信道值
     band |= (1) << 4;             // 调频启用
     RDA5807M_Write_Reg(0x03, band);
     RDA5807M_Write_Reg(0x03, band); // 需要写入两次，咱也不知道为啥
@@ -288,7 +288,7 @@ uint16t seek(uint8t direction, bit round)
     RDA5807M_Write_Reg(0x02, temp_reg);
     while ((RDA5807M_Read_Reg(0x0A) & 0x4000) == 0) // 等待搜索完成
     {
-        Delay(1);
+        Delay(10);
     }
 
     // 将搜索到频率设置为播放频率

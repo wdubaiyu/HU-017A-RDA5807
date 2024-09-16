@@ -12,7 +12,7 @@ extern uint8t LED_TIMED_STANDBY;
 extern bit LED_SEEK_D;
 
 // 显示数码管
-void Led_Loop();
+bit Led_Loop();
 
 // les 睡眠时间重置
 void LED_RESET_SLEEP_TIME();

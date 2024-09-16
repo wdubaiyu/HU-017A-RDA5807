@@ -27,7 +27,7 @@ extern bit sys_write_poll_flag;
 /**
  * 开机初始化读取配置
  */
-uint8t CONF_SYS_INIT(void);
+bit CONF_SYS_INIT(void);
 
 /**
  * 持久化当前电台（频率和索引）

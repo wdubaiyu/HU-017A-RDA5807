@@ -260,27 +260,25 @@ void userInput(uint8t Key_num)
  */
 void InitSystem()
 {
+	bit autoMatic = CONF_SYS_INIT();
 	key_function_flag = 0x00;
 	POWER_STATUS = 0x00;
-	LED_TIMED_STANDBY = 0x00;
+	LED_TIMED_STANDBY = 0x1E;
+
 	// 初始化收音机
 	RDA5807M_init();
 	// 打开数码管显示、键盘轮询
 	LED_RESET_SLEEP_TIME();
 	Timer0Init();
-	Delay(8);
 
-	if (CONF_SYS_INIT()) // 加载上一次系统配置,返回是否需要自动搜台
+	if (autoMatic) // 加载上一次系统配置,返回是否需要自动搜台
 	{
 		RDA5807M_Search_Automatic();
 	}
 	else
 	{ // 播放上次关机时的电台
 		LED_FRE_REAL = sys_freq;
-		RDA5807M_Set_Freq(sys_freq);
 	}
-	// 设置系统音量
-	RDA5807M_Set_Volume(sys_vol);
 }
 
 void main()
@@ -344,46 +342,52 @@ void Timer0_Rountine(void) interrupt 1
 {
 	static uint16t timed_stanby_count;
 	uint8t led_type = LED_GET_DISPLY_TYPE();
-	// 不是关机状态才显示数码管
-	if (POWER_STATUS < 2)
-	{
-		Led_Loop();
-	}
-
-	Key_Loop();
-
-	if (led_type != 10)
-	{
-		// 是否需要显示恢复为频率
-		if (led_type < 100)
-		{
-			if (++LED_DISPLAY_REC_COUNT >= LED_REC_TIME)
-			{
-				LED_SET_DISPLY_TYPE(10);
-				// 数码管恢复显示时触发写操作
-				conf_write_flag = 1;
-			}
-		}
-	}
-	else if (sys_poll_mode) // 显示的是10频率，开启了rssi轮询显示
-	{
-		if (++LED_DISPLAY_REC_COUNT >= LED_REC_TIME)
-		{
-			rssi_read_flag = 1;
-		}
-	}
 
 	// 定时关机功能开启,循环减时间
 	if (POWER_STATUS == 1)
 	{
-		if (++timed_stanby_count > 60000)
+		if (++timed_stanby_count > 60000) // 60 000ms等于一分钟
 		{
-			LED_TIMED_STANDBY -= 1;
-			timed_stanby_count = 0;
+			LED_TIMED_STANDBY -= 1; // 减去一分钟
+			timed_stanby_count = 0; // 重新计数
 		}
 	}
 
-	TL0 = 0x88; // 设置定时初值
-	TH0 = 0x96; // 设置定时初值
+	// 轮询按键
+	Key_Loop();
+
+	// 不是关机状态才显示数码管
+	if (POWER_STATUS < 2)
+	{
+		// 数码管是否关闭
+		if (Led_Loop())
+		{
+			// 数码管关闭不执行和数码管相关的操作
+			return;
+		}
+
+		if (led_type != 10) // 当前不显示频率10
+		{
+			if (led_type < 100) // 是否需要显示恢复为频率
+			{
+				if (++LED_DISPLAY_REC_COUNT >= LED_REC_TIME)
+				{
+					LED_SET_DISPLY_TYPE(10);
+					// 数码管恢复显示时触发持久化操作（不包括FREQ——index）
+					conf_write_flag = 1;
+				}
+			}
+		}
+		else if (sys_poll_mode) // 显示的是10频率，开启了rssi轮询显示
+		{
+			if (++LED_DISPLAY_REC_COUNT >= LED_REC_TIME)
+			{
+				rssi_read_flag = 1;
+			}
+		}
+	}
+
+	TL0 = 0x66; // 设置定时初值
+	TH0 = 0x7E; // 设置定时初值
 	TF0 = 0;	// 清除TF0标志,进入下一次计时
 }

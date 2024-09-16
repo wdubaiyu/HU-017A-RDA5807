@@ -27,9 +27,9 @@ unsigned char k4_short_flag = 0; // 短按标志
 unsigned char k1_long_flag = 0; // 长按标志
 unsigned char k2_long_flag = 0; // 长按标志
 
-unsigned char Combination_12 = 0; // 组合按键按下标识
-unsigned char Combination_13 = 0; // 组合按键按下标识
-unsigned char Combination_14 = 0; // 组合按键按下标识
+unsigned char combination_12 = 0; // 组合按键按下标识
+unsigned char combination_13 = 0; // 组合按键按下标识
+unsigned char combination_14 = 0; // 组合按键按下标识
 
 /**
  * @brief  获取按键键码(获取清零)
@@ -60,17 +60,17 @@ void Key_Loop(void)
 		}
 		if (k1_long_flag) // 在key1 长按的基础上 按住了key3
 		{
-			if (Combination_12)
+			if (combination_12)
 			{
-				Combination_12 = 0;
+				combination_12 = 0;
 			}
-			else if (Combination_13)
+			else if (combination_13)
 			{
-				Combination_13 = 0;
+				combination_13 = 0;
 			}
-			else if (Combination_14)
+			else if (combination_14)
 			{
-				Combination_14 = 0;
+				combination_14 = 0;
 			}
 			else
 			{
@@ -81,7 +81,7 @@ void Key_Loop(void)
 
 		k1_lock_flage = 0; // 清除自锁标志
 	}
-	else if (!k1_lock_flage && !Combination_12 && !Combination_13 && !Combination_14) // 按键持续按下
+	else if (!k1_lock_flage && !combination_12 && !combination_13 && !combination_14) // 按键持续按下
 	{
 		if (++k1_cnt > KEY_DELAY_TIME)
 		{
@@ -94,7 +94,7 @@ void Key_Loop(void)
 				k1_lock_flage = 1; // 自锁防止再次进入
 				k1_long_flag = 1;
 				k1_short_flag = 0; // 清空短按
-				Combination_12 = 1;
+				combination_12 = 1;
 				KeyNum = 12;
 			}
 			else if (!KEY3)
@@ -102,7 +102,7 @@ void Key_Loop(void)
 				k1_lock_flage = 1; // 自锁防止再次进入
 				k1_long_flag = 1;
 				k1_short_flag = 0; // 清空短按
-				Combination_13 = 1;
+				combination_13 = 1;
 				KeyNum = 13;
 			}
 			else if (!KEY4)
@@ -110,7 +110,7 @@ void Key_Loop(void)
 				k1_lock_flage = 1; // 自锁防止再次进入
 				k1_long_flag = 1;
 				k1_short_flag = 0; // 清空短按
-				Combination_14 = 1;
+				combination_14 = 1;
 				KeyNum = 14;
 			}
 			else
@@ -131,7 +131,7 @@ void Key_Loop(void)
 		k2_lock_flage = 0; // 清除自锁标志
 		k2_cnt = 0;
 	}
-	else if (!k2_lock_flage && !k1_short_flag && !k1_long_flag && !Combination_12 && !Combination_13 && !Combination_14) // 按键持续按下
+	else if (!k2_lock_flage && !k1_short_flag && !k1_long_flag && !combination_12 && !combination_13 && !combination_14) // 按键持续按下
 	{
 		if (++k2_cnt > KEY_DELAY_TIME)
 		{
@@ -156,7 +156,7 @@ void Key_Loop(void)
 		k3_lock_flage = 0; // 清除自锁标志
 		k3_cnt = 0;
 	}
-	else if (!k3_lock_flage && !k1_short_flag && !k1_long_flag && !Combination_12 && !Combination_13 && !Combination_14) // 按键持续按下
+	else if (!k3_lock_flage && !k1_short_flag && !k1_long_flag && !combination_12 && !combination_13 && !combination_14) // 按键持续按下
 	{
 		if (++k3_cnt > KEY_DELAY_TIME)
 		{
@@ -180,7 +180,7 @@ void Key_Loop(void)
 		k4_lock_flage = 0; // 清除自锁标志
 		k4_cnt = 0;
 	}
-	else if (!k4_lock_flage && !k1_short_flag && !k1_long_flag && !Combination_12 && !Combination_13 && !Combination_14) // 按键持续按下
+	else if (!k4_lock_flage && !k1_short_flag && !k1_long_flag && !combination_12 && !combination_13 && !combination_14) // 按键持续按下
 	{
 		if (++k4_cnt > KEY_DELAY_TIME)
 		{

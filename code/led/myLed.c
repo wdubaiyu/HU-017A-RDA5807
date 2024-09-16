@@ -1,8 +1,8 @@
 #include <STC15.H>
 #include <stdio.h>
-#include "Delay.h"
 #include "led/74HC595.h"
 #include "led/myLed.h"
+
 //,0xC7 -->L11  0x89-->H12
 uint8t code NixieTable[] = {
 	0xC0, 0xF9, 0xA4, 0xB0, 0x99,		// (0)0,1,2,3,4
@@ -10,7 +10,7 @@ uint8t code NixieTable[] = {
 	0x88, 0x83, 0xC6, 0xA1, 0x86,		// (11)A,b,C,d,E
 	0x8E, 0x8C, 0xC1, 0xCE, 0x91,		// (16)F,P,U,T,y
 	0x89, 0xC7, 0x12, 0xC8, 0xAB,		// (21)L,H,S,N,n
-	0xF7};								//(26)_
+	0xF7, 0xBF};						//(26)_ -
 uint8t code NixieTableDp[] = {
 	0x40, 0x79, 0x24, 0x30, 0x19,
 	0x12, 0x02, 0x78, 0x00, 0x10, 0x7F,
@@ -49,11 +49,11 @@ void DispaySELLP()
 {
 	if (sys_sleep_mode)
 	{
-		DisplayNUM(0xFF, 21, 0xFF, 0xFF, 0xFF);
+		DisplayNUM(0x17, 0xFF, 0xFF, 21, 0xFF);
 	}
 	else
 	{
-		DisplayNUM(0xFF, 22, 0xFF, 0xFF, 0xFF);
+		DisplayNUM(0x17, 0xFF, 0xFF, 22, 0xFF);
 	}
 }
 
@@ -107,7 +107,7 @@ void DispayFRE(void)
 // 显示音量
 void DispayVl()
 {
-	DisplayNUM(100, sys_vol / 10, sys_vol % 10, 100, 100);
+	DisplayNUM(0xFF, sys_vol / 10, sys_vol % 10, 0xFF, 0xFF);
 }
 
 // 显示信号质量
@@ -132,7 +132,7 @@ void DispaySNR()
 	uint8t NUM_GE, NUM_SHI;
 	NUM_GE = (LED_SNR % 10);
 	NUM_SHI = (LED_SNR % 100) / 10;
-	DisplayNUM(23, 25, NUM_SHI, NUM_GE, 0xFF);
+	DisplayNUM(0x17, 25, NUM_SHI, NUM_GE, 0xFF);
 }
 
 void DispayTimedStandby()
@@ -166,55 +166,72 @@ void DispayPOLL()
 	DisplayNUM(0x17, 0xFF, 0xFF, sys_poll_mode, 0xFF);
 }
 
+/**
+ * 查询p所在的位置是否有效显示位置
+ */
+bit EFFECTIVE_POSTITION(uint8t p, a, b, c, d, sizeOfNixie)
+{
+	if (p == 0)
+	{
+		return a < sizeOfNixie;
+	}
+
+	if (p == 1)
+	{
+		return b < sizeOfNixie;
+	}
+
+	if (p == 2)
+	{
+		return c < sizeOfNixie;
+	}
+
+	if (p == 3)
+	{
+		return d < sizeOfNixie;
+	}
+	return 0;
+}
+
 // 显示数字 内部使用
 void DisplayNUM(uint8t a, b, c, d, dp)
 {
 	// 数码管显示位数轮询（0~3）
 	static uint8t LED_POLLING_POSTITION = 0;
-	uint8t code de = 0;
 	uint8t sizeOfNixie = sizeof(NixieTable);
+	while (!EFFECTIVE_POSTITION(LED_POLLING_POSTITION, a, b, c, d, sizeOfNixie))
+	{
+		if (++LED_POLLING_POSTITION > 3)
+		{
+			LED_POLLING_POSTITION = 0;
+		}
+	}
 
 	if (LED_POLLING_POSTITION == 0)
 	{
-		if (a < sizeOfNixie)
-		{
-			P21 = P22 = P23 = 1;
-			_74HC595_WriteByte(getData(a, dp == 1));
-			P20 = 0;
-			Delay(de);
-		}
+		P21 = P22 = P23 = 1;
+		_74HC595_WriteByte(getData(a, dp == 1));
+		P20 = 0;
 	}
-	else if (LED_POLLING_POSTITION == 1)
-	{
-		if (b < sizeOfNixie)
-		{
-			P20 = P22 = P23 = 1;
-			_74HC595_WriteByte(getData(b, dp == 2));
-			P21 = 0;
-			Delay(de);
-		}
-	}
-	else if (LED_POLLING_POSTITION == 2)
-	{
 
-		if (c < sizeOfNixie)
-		{
-			P20 = P21 = P23 = 1;
-			_74HC595_WriteByte(getData(c, dp == 3));
-			P22 = 0;
-			Delay(de);
-		}
-	}
-	else if (LED_POLLING_POSTITION == 3)
+	if (LED_POLLING_POSTITION == 1)
 	{
-		if (d < sizeOfNixie)
-		{
+		P20 = P22 = P23 = 1;
+		_74HC595_WriteByte(getData(b, dp == 2));
+		P21 = 0;
+	}
+	if (LED_POLLING_POSTITION == 2)
+	{
+		P20 = P21 = P23 = 1;
+		_74HC595_WriteByte(getData(c, dp == 3));
+		P22 = 0;
+	}
 
-			P20 = P21 = P22 = 1;
-			_74HC595_WriteByte(getData(d, dp == 4));
-			P23 = 0;
-			Delay(de);
-		}
+	if (LED_POLLING_POSTITION == 3)
+	{
+		P20 = P21 = P22 = 1;
+		_74HC595_WriteByte(getData(d, dp == 4));
+		P23 = 0;
 	}
 
 	if (++LED_POLLING_POSTITION > 3)
@@ -264,7 +281,7 @@ void LED_RESET_SLEEP_TIME()
 }
 
 // 判断是否显示
-void Led_Loop()
+bit Led_Loop()
 {
 	// sys_sleep_mode>0一直显示
 	if (sys_sleep_mode || LED_DISPLAY_TYPE > 100)
@@ -281,7 +298,9 @@ void Led_Loop()
 	else
 	{
 		P20 = P21 = P22 = P23 = 1;
+		return 1;
 	}
+	return 0;
 }
 
 void LED_SET_DISPLY_TYPE(uint8t display_type)
