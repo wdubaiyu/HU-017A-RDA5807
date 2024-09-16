@@ -1,12 +1,12 @@
 #include <STC15.H>
 #include <stdio.h>
-#include "Delay.h"
 #include "UART.h"
 #include "config/Config.h"
 #include "config/EEPROM.h"
 #include "rda5807/RDA5807M.h"
 #include "led/myLed.h"
-#include "time0/time0.h"
+#include "time/time0.h"
+#include "time/time2.h"
 #include "key/key.h"
 
 // （自动搜台设置==11）
@@ -15,6 +15,7 @@ uint8t key_function_flag;
 
 // 电源状态（0正常，1关机倒计时，2已关机）
 uint8t POWER_STATUS;
+uint16t timed_stanby_count;
 
 // 需要系统写
 bit conf_write_flag;
@@ -116,13 +117,17 @@ void userInput(uint8t Key_num)
 				// 定时关机大于0才能确认
 				if (LED_TIMED_STANDBY > 0)
 				{
-					LED_SET_DISPLY_TYPE(1);
 					POWER_STATUS = 1;
+					Timer2Init();
+					IE2 |= 0x04; // enable timer2 interrupt
+					timed_stanby_count = 0;
+					LED_SET_DISPLY_TYPE(1);
 				}
 				else
 				{
-					LED_SET_DISPLY_TYPE(0);
 					POWER_STATUS = 0;
+
+					LED_SET_DISPLY_TYPE(0);
 				}
 			}
 
@@ -157,6 +162,7 @@ void userInput(uint8t Key_num)
 		key_function_flag = 21;
 		// 设置定时关机时，取消上一次设定
 		POWER_STATUS = 0;
+		IE2 &= ~0x04; // disenable timer2 interrupt
 		LED_SET_DISPLY_TYPE(102);
 		return;
 	}
@@ -260,6 +266,7 @@ void userInput(uint8t Key_num)
  */
 void InitSystem()
 {
+	// 读取系统持久化配置，返回是否需要自动搜台
 	bit autoMatic = CONF_SYS_INIT();
 	key_function_flag = 0x00;
 	POWER_STATUS = 0x00;
@@ -290,11 +297,12 @@ void main()
 	// printf("power on \r\n");
 	while (1)
 	{
+		// 是否切换到显示RSSI
 		if (rssi_read_flag)
 		{
 			LED_RSSI = RDA5807M_Read_RSSI();
 			LED_SET_DISPLY_TYPE(2);
-			rssi_read_flag = 0;
+			rssi_read_flag = 0; // 重置标记
 		}
 
 		// 读取用户按键输入
@@ -311,6 +319,7 @@ void main()
 
 			continue;
 		}
+
 		// 关机时间到
 		if (POWER_STATUS == 1 && LED_TIMED_STANDBY < 1)
 		{
@@ -340,18 +349,7 @@ void main()
  */
 void Timer0_Rountine(void) interrupt 1
 {
-	static uint16t timed_stanby_count;
 	uint8t led_type = LED_GET_DISPLY_TYPE();
-
-	// 定时关机功能开启,循环减时间
-	if (POWER_STATUS == 1)
-	{
-		if (++timed_stanby_count > 60000) // 60 000ms等于一分钟
-		{
-			LED_TIMED_STANDBY -= 1; // 减去一分钟
-			timed_stanby_count = 0; // 重新计数
-		}
-	}
 
 	// 轮询按键
 	Key_Loop();
@@ -390,4 +388,17 @@ void Timer0_Rountine(void) interrupt 1
 	TL0 = 0x66; // 设置定时初值
 	TH0 = 0x7E; // 设置定时初值
 	TF0 = 0;	// 清除TF0标志,进入下一次计时
+}
+
+void Timer2_Rountine(void) interrupt 12
+{
+	// 定时关机功能开启,循环减时间
+	if (POWER_STATUS == 1)
+	{
+		if (++timed_stanby_count > 3000)
+		{
+			LED_TIMED_STANDBY -= 1; // 减去一分钟
+			timed_stanby_count = 0; // 重新计数
+		}
+	}
 }
