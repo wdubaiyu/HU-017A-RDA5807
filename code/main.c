@@ -269,8 +269,9 @@ void InitSystem()
 	// 读取系统持久化配置，返回是否需要自动搜台
 	bit autoMatic = CONF_SYS_INIT();
 	key_function_flag = 0x00;
-	POWER_STATUS = 0x00;
 	LED_TIMED_STANDBY = 0x1E;
+	IE2 &= ~0x04; // disenable timer2 interrupt
+	POWER_STATUS = 0x00;
 
 	// 初始化收音机
 	RDA5807M_init();
@@ -324,6 +325,7 @@ void main()
 		if (POWER_STATUS == 1 && LED_TIMED_STANDBY < 1)
 		{
 			POWER_STATUS = 2;
+			IE2 &= ~0x04; // disenable timer2 interrupt
 			RDA5807M_OFF();
 			P20 = P21 = P22 = P23 = 1; // 关闭数码管
 			continue;
