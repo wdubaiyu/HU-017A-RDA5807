@@ -118,9 +118,8 @@ void userInput(uint8t Key_num)
 				if (LED_TIMED_STANDBY > 0)
 				{
 					POWER_STATUS = 1;
-					Timer2Init();
-					IE2 |= 0x04; // enable timer2 interrupt
 					timed_stanby_count = 0;
+					Timer2Init(); // 定时器开始计时
 					LED_SET_DISPLY_TYPE(1);
 				}
 				else
@@ -162,7 +161,7 @@ void userInput(uint8t Key_num)
 		key_function_flag = 21;
 		// 设置定时关机时，取消上一次设定
 		POWER_STATUS = 0;
-		IE2 &= ~0x04; // disenable timer2 interrupt
+		AUXR &= ~0x10; // 定时器2停止计时
 		LED_SET_DISPLY_TYPE(102);
 		return;
 	}
@@ -270,7 +269,7 @@ void InitSystem()
 	bit autoMatic = CONF_SYS_INIT();
 	key_function_flag = 0x00;
 	LED_TIMED_STANDBY = 0x1E;
-	IE2 &= ~0x04; // disenable timer2 interrupt
+	AUXR &= ~0x10; // 定时器2停止计时
 	POWER_STATUS = 0x00;
 
 	// 初始化收音机
@@ -325,7 +324,7 @@ void main()
 		if (POWER_STATUS == 1 && LED_TIMED_STANDBY < 1)
 		{
 			POWER_STATUS = 2;
-			IE2 &= ~0x04; // disenable timer2 interrupt
+			AUXR &= ~0x10; // 定时器2停止计时
 			RDA5807M_OFF();
 			P20 = P21 = P22 = P23 = 1; // 关闭数码管
 			continue;
