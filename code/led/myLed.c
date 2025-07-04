@@ -6,11 +6,12 @@
 //,0xC7 -->L11  0x89-->H12
 uint8t code NixieTable[] = {
 	0xC0, 0xF9, 0xA4, 0xB0, 0x99,		// (0)0,1,2,3,4
-	0x92, 0x82, 0xF8, 0x80, 0x90, 0x7F, // (5)5,6,7,8,9,点
+	0x92, 0x82, 0xF8, 0x80, 0x90, 0x7F, // (5)5,6,7,8,9,点(10)
 	0x88, 0x83, 0xC6, 0xA1, 0x86,		// (11)A,b,C,d,E
 	0x8E, 0x8C, 0xC1, 0xCE, 0x91,		// (16)F,P,U,T,y
 	0x89, 0xC7, 0x12, 0xC8, 0xAB,		// (21)L,H,S,N,n
-	0xF7, 0xBF};						//(26)_ -
+	0xF7, 0xBF};						// (26)_ -
+
 uint8t code NixieTableDp[] = {
 	0x40, 0x79, 0x24, 0x30, 0x19,
 	0x12, 0x02, 0x78, 0x00, 0x10, 0x7F,
@@ -27,7 +28,7 @@ bit LED_SEEK_D = 1;
 // 睡眠模式剩余时间
 uint16t LED_SHOW_TIME = 0x1F40; // 统计睡眠模式剩余时间8s
 
-void DisplayNUM(uint8t a, b, c, d, dp);
+void CallNixieTube(uint8t a, b, c, d, dp);
 
 /**
  内部使用 根据dpf判断是否需要小数点
@@ -49,11 +50,11 @@ void DispaySELLP()
 {
 	if (sys_sleep_mode)
 	{
-		DisplayNUM(0x17, 0xFF, 0xFF, 21, 0xFF);
+		CallNixieTube(0x17, 0xFF, 0xFF, 21, 0xFF);
 	}
 	else
 	{
-		DisplayNUM(0x17, 0xFF, 0xFF, 22, 0xFF);
+		CallNixieTube(0x17, 0xFF, 0xFF, 22, 0xFF);
 	}
 }
 
@@ -67,11 +68,11 @@ void DispayF(uint16t temp)
 	NUM_DEC = (temp % 100) / 10;
 	if (NUM_BAI < 1)
 	{
-		DisplayNUM(100, NUM_SHI, NUM_GE, NUM_DEC, 3);
+		CallNixieTube(100, NUM_SHI, NUM_GE, NUM_DEC, 3);
 	}
 	else
 	{
-		DisplayNUM(NUM_BAI, NUM_SHI, NUM_GE, NUM_DEC, 3);
+		CallNixieTube(NUM_BAI, NUM_SHI, NUM_GE, NUM_DEC, 3);
 	}
 }
 // 显示频率(loop调用时候显示为递增效果)
@@ -107,7 +108,7 @@ void DispayFRE(void)
 // 显示音量
 void DispayVl()
 {
-	DisplayNUM(0xFF, sys_vol / 10, sys_vol % 10, 0xFF, 0xFF);
+	CallNixieTube(0xFF, sys_vol / 10, sys_vol % 10, 0xFF, 0xFF);
 }
 
 // 显示信号质量
@@ -119,11 +120,11 @@ void DispayRSSI()
 	NUM_GE = (LED_RSSI % 10);
 	if (NUM_BAI)
 	{
-		DisplayNUM(0xFF, NUM_BAI, NUM_SHI, NUM_GE, 0xFF);
+		CallNixieTube(0xFF, NUM_BAI, NUM_SHI, NUM_GE, 0xFF);
 	}
 	else
 	{ // 百位不显示0，大多数情况下百位都达不到1
-		DisplayNUM(0xFF, 0xFF, NUM_SHI, NUM_GE, 0xFF);
+		CallNixieTube(0xFF, 0xFF, NUM_SHI, NUM_GE, 0xFF);
 	}
 }
 
@@ -132,7 +133,7 @@ void DispaySNR()
 	uint8t NUM_GE, NUM_SHI;
 	NUM_GE = (LED_SNR % 10);
 	NUM_SHI = (LED_SNR % 100) / 10;
-	DisplayNUM(0x17, 25, NUM_SHI, NUM_GE, 0xFF);
+	CallNixieTube(0x17, 25, NUM_SHI, NUM_GE, 0xFF);
 }
 
 void DispayTimedStandby()
@@ -143,27 +144,29 @@ void DispayTimedStandby()
 	NUM_GE = (LED_TIMED_STANDBY % 10);
 	if (NUM_BAI)
 	{
-		DisplayNUM(22, NUM_BAI, NUM_SHI, NUM_GE, 0xFF);
+		// 22 对应led显示屏幕 L
+		CallNixieTube(22, NUM_BAI, NUM_SHI, NUM_GE, 0xFF);
 	}
 	else
-	{ // 百位不显示0，大多数情况下百位都达不到1
-		DisplayNUM(22, 0xFF, NUM_SHI, NUM_GE, 0xFF);
+	{ // 22 对应led显示屏幕 L 0xFF(百位不显示0)
+		CallNixieTube(22, 0xFF, NUM_SHI, NUM_GE, 0xFF);
 	}
 }
 
 void DispalyConfirm()
 {
-	DisplayNUM(0xFF, 0xFF, 24, 0, 0xFF);
+	CallNixieTube(0xFF, 0xFF, 24, 0, 0xFF);
 }
 
 void DispalCancel()
 {
-	DisplayNUM(0xFF, 0xFF, 26, 26, 0xFF);
+	CallNixieTube(0xFF, 0xFF, 26, 26, 0xFF);
 }
 
+// 切换rssi轮询开关
 void DispayPOLL()
 {
-	DisplayNUM(0x17, 0xFF, 0xFF, sys_poll_mode, 0xFF);
+	CallNixieTube(0x17, 0xFF, 0xFF, cycle_in_freq_rssi, 0xFF);
 }
 
 /**
@@ -193,12 +196,14 @@ bit EFFECTIVE_POSTITION(uint8t p, a, b, c, d, sizeOfNixie)
 	return 0;
 }
 
-// 显示数字 内部使用
-void DisplayNUM(uint8t a, b, c, d, dp)
+// 数码管显示 内部使用 不能只显示"."
+void CallNixieTube(uint8t a, b, c, d, dp)
 {
 	// 数码管显示位数轮询（0~3）
 	static uint8t LED_POLLING_POSTITION = 0;
 	uint8t sizeOfNixie = sizeof(NixieTable);
+
+	// 获取有效显示位
 	while (!EFFECTIVE_POSTITION(LED_POLLING_POSTITION, a, b, c, d, sizeOfNixie))
 	{
 		if (++LED_POLLING_POSTITION > 3)
@@ -206,30 +211,32 @@ void DisplayNUM(uint8t a, b, c, d, dp)
 			LED_POLLING_POSTITION = 0;
 		}
 	}
+	//更改值前关闭所有数码管位显
+	P20 = P21 = P22 = P23 = 1;
 
 	if (LED_POLLING_POSTITION == 0)
 	{
-		P21 = P22 = P23 = 1;
+		// P21 = P22 = P23 = 1;
 		_74HC595_WriteByte(getData(a, dp == 1));
 		P20 = 0;
 	}
 
 	if (LED_POLLING_POSTITION == 1)
 	{
-		P20 = P22 = P23 = 1;
+		// P20 = P22 = P23 = 1;
 		_74HC595_WriteByte(getData(b, dp == 2));
 		P21 = 0;
 	}
 	if (LED_POLLING_POSTITION == 2)
 	{
-		P20 = P21 = P23 = 1;
+		// P20 = P21 = P23 = 1;
 		_74HC595_WriteByte(getData(c, dp == 3));
 		P22 = 0;
 	}
 
 	if (LED_POLLING_POSTITION == 3)
 	{
-		P20 = P21 = P22 = 1;
+		// P20 = P21 = P22 = 1;
 		_74HC595_WriteByte(getData(d, dp == 4));
 		P23 = 0;
 	}
@@ -283,7 +290,7 @@ void LED_RESET_SLEEP_TIME()
 // 判断是否显示
 bit Led_Loop()
 {
-	// sys_sleep_mode>0一直显示
+	// sys_sleep_mode>0一直显示 （LED_DISPLAY_TYPE 大于100时是出发了功能设置需要一直显示）
 	if (sys_sleep_mode || LED_DISPLAY_TYPE > 100)
 	{
 		DISPLY();
@@ -297,7 +304,13 @@ bit Led_Loop()
 	// 不显示关闭数量管电源
 	else
 	{
-		P20 = P21 = P22 = P23 = 1;
+		if (LED_SHOW_TIME != 5)
+		{
+			LED_SHOW_TIME = 5;
+			P20 = P21 = P22 = P23 = 1;
+			_74HC595_WriteByte(0x00);
+		}
+
 		return 1;
 	}
 	return 0;

@@ -5,6 +5,7 @@
 #include "config/EEPROM.h"
 #include "rda5807/RDA5807M.h"
 #include "led/myLed.h"
+#include "led/74HC595.h"
 #include "time/time0.h"
 #include "time/time2.h"
 #include "key/key.h"
@@ -169,7 +170,7 @@ void userInput(uint8t Key_num)
 	// K14 切换POLL显示
 	if (Key_num == 14)
 	{
-		sys_poll_mode = ~sys_poll_mode;
+		cycle_in_freq_rssi = ~cycle_in_freq_rssi;
 		sys_write_poll_flag = 1;
 		LED_SET_DISPLY_TYPE(5);
 		return;
@@ -265,12 +266,14 @@ void userInput(uint8t Key_num)
  */
 void InitSystem()
 {
+
 	// 读取系统持久化配置，返回是否需要自动搜台
 	bit autoMatic = CONF_SYS_INIT();
 	key_function_flag = 0x00;
 	LED_TIMED_STANDBY = 0x1E;
 	AUXR &= ~0x10; // 定时器2停止计时
 	POWER_STATUS = 0x00;
+	_74HC595_init();
 
 	// 初始化收音机
 	RDA5807M_init();
@@ -336,7 +339,7 @@ void main()
 			userInput(Key_num);
 		}
 
-		// 主程序持久化触发（保护音量和睡眠模式）
+		// 主程序持久化触发（保存播放频率、音量、睡眠模式）
 		if (conf_write_flag)
 		{
 			CONF_WRITE();
@@ -358,14 +361,12 @@ void Timer0_Rountine(void) interrupt 1
 	// 不是关机状态才显示数码管
 	if (POWER_STATUS < 2)
 	{
-		// 数码管是否关闭
+		// 数码管关闭不执行和数码管相关的操作
 		if (Led_Loop())
-		{
-			// 数码管关闭不执行和数码管相关的操作
 			return;
-		}
 
-		if (led_type != 10) // 当前不显示频率10
+		// 数码管显示没关闭时，需要切换为freq显示
+		if (led_type != 10)
 		{
 			if (led_type < 100) // 是否需要显示恢复为频率
 			{
@@ -377,7 +378,7 @@ void Timer0_Rountine(void) interrupt 1
 				}
 			}
 		}
-		else if (sys_poll_mode) // 显示的是10频率，开启了rssi轮询显示
+		else if (cycle_in_freq_rssi) // 显示的是10频率，开启了rssi轮询显示
 		{
 			if (++LED_DISPLAY_REC_COUNT >= LED_REC_TIME)
 			{

@@ -7,7 +7,8 @@
 uint8t sys_vol = 0x05;
 // 0一段时间后休眠 1一直显示
 bit sys_sleep_mode;
-bit sys_poll_mode = 0;
+// 轮询展示freq 和 rssi 开关
+bit cycle_in_freq_rssi = 0;
 uint16t sys_freq = 0x21FC; // 8700
 
 // 当前频率对应电台的序号
@@ -83,7 +84,7 @@ void CONF_SET_SLEEP_POLL()
 {
     IapEraseSector(addr_sleep_mode);
     IapProgramByte(addr_sleep_mode, 0x00 | sys_sleep_mode);
-    IapProgramByte(addr_poll_mode, 0x00 | sys_poll_mode);
+    IapProgramByte(addr_poll_mode, 0x00 | cycle_in_freq_rssi);
 }
 
 void CONF_WRITE(void)
@@ -104,6 +105,7 @@ void CONF_WRITE(void)
     {
         CONF_SET_SLEEP_POLL();
         sys_write_sleep_flag = 0;
+        sys_write_poll_flag = 0;
     }
 }
 
@@ -158,7 +160,7 @@ bit CONF_SYS_INIT(void)
     sys_sleep_mode = IapReadByte(addr_sleep_mode) & 0x01;
 
     // 从eeprom获取POLL模式纠正
-    sys_poll_mode = IapReadByte(addr_poll_mode) & 0x01;
+    cycle_in_freq_rssi = IapReadByte(addr_poll_mode) & 0x01;
 
     // 读取电台最大索引（0~254有效），255没搜索过
     sys_radio_index_max = IapReadByte(addr_radio);

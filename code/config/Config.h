@@ -16,7 +16,7 @@ extern uint8t sys_radio_index;
 extern uint8t sys_radio_index_max;
 extern bit sys_sleep_mode;
 // 轮询显示SNR和RSSI
-extern bit sys_poll_mode;
+extern bit cycle_in_freq_rssi;
 
 // 延迟写类型标记
 extern bit sys_write_freq_flag;

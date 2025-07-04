@@ -1,10 +1,18 @@
 #include <STC15.H>
 #include "74HC595.h"
+#include "Delay.h"
 
-sbit RCK = P3 ^ 3; // RCLK P33 74HC595_12  全部移出去
-sbit SCK = P3 ^ 4; // SCLK P34 74HC595_11  向下移动
-sbit SER = P3 ^ 2; // SER  P32 74HC595_14
+sbit RCK = P3 ^ 3; // RCLK P33 74HC595_12  全部移出去(存储时钟)
+sbit SCK = P3 ^ 4; // SCLK P34 74HC595_11  向下移动(移位时钟)
+sbit SER = P3 ^ 2; // SER  P32 74HC595_14  串行数据输入（DS）
 
+void _74HC595_init()
+{
+	SER = 0; // 数据线置0
+	SCK = 0; // 移位时钟置0
+	RCK = 0; // 存储时钟置0
+	P20 = P21 = P22 = P23 = 1;
+}
 /**
  * 重高到底移出去
  * @brief  74HC595写入一个字节
@@ -21,5 +29,7 @@ void _74HC595_WriteByte(unsigned char byte_p)
 		SCK = 0;
 	}
 	RCK = 1;
+	_nop_();
+	_nop_();
 	RCK = 0;
 }
