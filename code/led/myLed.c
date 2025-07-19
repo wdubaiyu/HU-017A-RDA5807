@@ -308,7 +308,6 @@ bit Led_Loop()
 		{
 			LED_SHOW_TIME = 5;
 			P20 = P21 = P22 = P23 = 1;
-			_74HC595_WriteByte(0x00);
 		}
 
 		return 1;

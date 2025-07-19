@@ -273,7 +273,6 @@ void InitSystem()
 	LED_TIMED_STANDBY = 0x1E;
 	AUXR &= ~0x10; // 定时器2停止计时
 	POWER_STATUS = 0x00;
-	_74HC595_init();
 
 	// 初始化收音机
 	RDA5807M_init();
@@ -397,7 +396,7 @@ void Timer2_Rountine(void) interrupt 12
 	// 定时关机功能开启,循环减时间
 	if (POWER_STATUS == 1)
 	{
-		if (++timed_stanby_count > 3000)
+		if (++timed_stanby_count >= 3000)
 		{
 			LED_TIMED_STANDBY -= 1; // 减去一分钟
 			timed_stanby_count = 0; // 重新计数

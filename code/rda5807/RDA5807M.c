@@ -18,7 +18,7 @@ void RDA5807M_Write_Reg(uint8t Address, uint16t Data)
     Buf[1] = Data & 0x00ff;        // 低位
 
     I2C_Start();
-    I2C_SendByte(0x22);
+    I2C_SendByte(0x11 << 1);
     I2C_SendByte(Address);
     I2C_SendByte(Buf[0]);
     I2C_SendByte(Buf[1]);
@@ -35,10 +35,10 @@ uint16t RDA5807M_Read_Reg(uint8t Address)
     uint8t Buf[2] = {0};
 
     I2C_Start();
-    I2C_SendByte(0x22);
+    I2C_SendByte(0x11 << 1);
     I2C_SendByte(Address);
     I2C_Start();
-    I2C_SendByte(0x23);
+    I2C_SendByte((0x11 << 1) | 1);
     Buf[0] = I2C_ReadByte(0);
     Buf[1] = I2C_ReadByte(1);
     I2C_End();
@@ -52,14 +52,13 @@ uint16t RDA5807M_Read_Reg(uint8t Address)
  */
 void RDA5807M_init(void)
 {
-    RDA5807M_Write_Reg(0x02, 0x0002); // reset
+    RDA5807M_Write_Reg(0x02, 0x0003); // reset
     Delay(50);
-    RDA5807M_Write_Reg(0x02, 0xc001);
+    RDA5807M_Write_Reg(0x02, 0xc005);
     Delay(50);
-    RDA5807M_Write_Reg(0x03, 0x0010 | ((sys_freq - 8700) / 10) << 6); // space 00 100kHz band 00 87-108MHz  （中国band）
-    RDA5807M_Write_Reg(0x04, 0x0400);
+    RDA5807M_Write_Reg(0x03, 0x0010 | ((sys_freq - 8700) / 10) << 6); // 0x0010(TUNE BAND00 SPACE00)--> 87–108 MHz (US/Europe) SPACE 100 kHz  设置ch对应sys_freqMHz
     RDA5807M_Write_Reg(0x05, 0x86a0 | sys_vol); // seek SNR 0110  --> 6
-    RDA5807M_Write_Reg(0x06, 0x8000);
+    RDA5807M_Write_Reg(0x06, 0x0000);
     RDA5807M_Write_Reg(0x07, 0x5F1A);
     LED_FRE_REAL = sys_freq;
 }
@@ -77,27 +76,26 @@ uint16t RDA5807M_FreqToChan(uint16t Freq)
     uint16t End = 0;   // 频率结束
     uint16t Space = 0; // 频率间隔
     uint16t band = 0;
-    // 0x000C--->0000 0000 0000 1100
-    band = (RDA5807M_Read_Reg(0x03) & 0x000C) >> 2; // 0x03的3，2位（band）
-
-    if (band == 0 /*0b00*/)
+    // 0x03的3，2位（band） 0x000C--->0000 0000 0000 1100
+    band = (RDA5807M_Read_Reg(0x03) & 0x000C) >> 2;
+    if (band == 0) // 00 = 87–108 MHz (US/Europe)
     {
         Start = 8700;
         End = 10800;
     }
-    else if (band == 1 /*0b01*/)
+    else if (band == 1) // 01 = 76–91 MHz (Japan)
     {
         Start = 7600;
         End = 9100;
     }
-    else if (band == 2 /*0b10*/)
+    else if (band == 2) // 10 = 76–108 MHz (world wide)
     {
         Start = 7600;
         End = 10800;
     }
-    else if (band == 3 /*0b11*/)
+    else if (band == 3) // 11 = 65 –76 MHz （East Europe） or 50-65MHz
     {
-        if ((RDA5807M_Read_Reg(0x07) >> 9) & 0x01)
+        if ((RDA5807M_Read_Reg(0x07) >> 9) & 0x01) // 1 = 65~76 MHz;
         {
             Start = 6500;
             End = 7600;
@@ -109,18 +107,18 @@ uint16t RDA5807M_FreqToChan(uint16t Freq)
         }
     }
     else
-        return 0;
+        return 0; // band错误
 
     band = (RDA5807M_Read_Reg(0x03) & 0x0003);
 
-    if (band == 0 /*0b00*/)
+    if (band == 0)
         Space = 10;
-    else if (band == 1 /*0b01*/)
+    else if (band == 1)
         Space = 20;
-    else if (band == 2 /*0b10*/)
+    else if (band == 2)
         Space = 5;
-    else if (band == 3 /*0b11*/)
-        Space = 2; // 有问题
+    else if (band == 3)
+        Space = 2; // 有问题 （RDA5807SP 才支持）
     else
         return 0;
 
@@ -131,6 +129,7 @@ uint16t RDA5807M_FreqToChan(uint16t Freq)
 
     return ((Freq - Start) / Space);
 }
+
 /**
  * @brief 将信道值转为频率
  * @param Chan:信道值
@@ -146,22 +145,22 @@ uint16t RDA5807M_ChanToFreq(uint16t Chan)
     uint16t band = 0;
     band = (RDA5807M_Read_Reg(0x03) & 0x000C) >> 2; // 0x03的3，2位（波段）
 
-    if (band == 0 /*0b00*/)
+    if (band == 0)
     {
         Start = 8700;
         End = 10800;
     }
-    else if (band == 1 /*0b01*/)
+    else if (band == 1)
     {
         Start = 7600;
         End = 9100;
     }
-    else if (band == 2 /*0b10*/)
+    else if (band == 2)
     {
         Start = 7600;
         End = 10800;
     }
-    else if (band == 3 /*0b11*/)
+    else if (band == 3)
     {
         if ((RDA5807M_Read_Reg(0x07) >> 9) & 0x01)
         {
@@ -179,13 +178,13 @@ uint16t RDA5807M_ChanToFreq(uint16t Chan)
 
     band = (RDA5807M_Read_Reg(0x03) & 0x0003);
 
-    if (band == 0 /*0b00*/)
+    if (band == 0)
         Space = 10;
-    else if (band == 1 /*0b01*/)
+    else if (band == 1)
         Space = 20;
-    else if (band == 2 /*0b10*/)
+    else if (band == 2)
         Space = 5;
-    else if (band == 3 /*0b11*/)
+    else if (band == 3)
         Space = 2;
     else
         return 0;
@@ -220,9 +219,15 @@ void RDA5807M_Set_Freq(uint16t Freq)
     uint16t band = RDA5807M_Read_Reg(0x03);
     band &= 0x003F;               // 清空信道值
     band |= (chan & 0x03FF) << 6; // 写入信道值
-    band |= (1) << 4;             // 调频启用
+    band |= 1 << 4;             // 调频启用
     RDA5807M_Write_Reg(0x03, band);
-    RDA5807M_Write_Reg(0x03, band); // 需要写入两次，咱也不知道为啥
+
+    // 等待调谐完成
+    while (!(RDA5807M_Read_Reg(0x0A) & (1 << 14)))
+        ; // STC=1
+
+    // The tune bit is reset to low automatically when the tune operation completes..
+    // RDA5807M_Write_Reg(0x03, band & ~(1 << 4));
     LED_SET_DISPLY_TYPE(10);
 }
 
@@ -286,7 +291,7 @@ uint16t seek(uint8t direction, bit round)
     }
 
     RDA5807M_Write_Reg(0x02, temp_reg);
-    while ((RDA5807M_Read_Reg(0x0A) & 0x4000) == 0) // 等待搜索完成
+    while (!(RDA5807M_Read_Reg(0x0A) & (1 << 14))) // 等待搜索完成
     {
         Delay(10);
     }
