@@ -266,20 +266,22 @@ void userInput(uint8t Key_num)
  */
 void InitSystem()
 {
+	bit autoMatic = 0;
+	POWER_STATUS = 0x00;
 
 	// 读取系统持久化配置，返回是否需要自动搜台
-	bit autoMatic = CONF_SYS_INIT();
+	autoMatic = CONF_SYS_INIT();
 	key_function_flag = 0x00;
 	LED_TIMED_STANDBY = 0x1E;
-	AUXR &= ~0x10; // 定时器2停止计时
-	POWER_STATUS = 0x00;
 
 	// 初始化收音机
 	RDA5807M_init();
+
+	Timer0Init();
+	AUXR &= ~0x10; // 定时器2停止计时
+
 	// 打开数码管显示、键盘轮询
 	LED_RESET_SLEEP_TIME();
-	Timer0Init();
-
 	if (autoMatic) // 加载上一次系统配置,返回是否需要自动搜台
 	{
 		RDA5807M_Search_Automatic();
@@ -287,6 +289,7 @@ void InitSystem()
 	else
 	{ // 播放上次关机时的电台
 		LED_FRE_REAL = sys_freq;
+		LED_SET_DISPLY_TYPE(10);
 	}
 }
 
@@ -362,7 +365,12 @@ void Timer0_Rountine(void) interrupt 1
 	{
 		// 数码管关闭不执行和数码管相关的操作
 		if (Led_Loop())
+		{
+			TL0 = 0x66; // 设置定时初值
+			TH0 = 0x7E; // 设置定时初值
+			TF0 = 0;	// 清除TF0标志,进入下一次计时
 			return;
+		}
 
 		// 数码管显示没关闭时，需要切换为freq显示
 		if (led_type != 10)

@@ -1,4 +1,5 @@
 #include <STC15.H>
+#include "config/Config.h"
 #include <stdio.h>
 #include "Key.h"
 
@@ -9,27 +10,24 @@ sbit KEY2 = P1 ^ 7; // v-
 sbit KEY3 = P1 ^ 5; // f+
 sbit KEY4 = P1 ^ 4; // f-
 
-unsigned char k1_lock_flage = 0;
-unsigned char k2_lock_flage = 0;
-unsigned char k3_lock_flage = 0;
-unsigned char k4_lock_flage = 0;
 
-unsigned int k1_cnt = 0; // 单击按键基数
-unsigned int k2_cnt = 0; // 单击按键基数
-unsigned int k3_cnt = 0; // 单击按键基数
-unsigned int k4_cnt = 0; // 单击按键基数
+// 按键状态结构体
+typedef struct
+{
+    unsigned int cnt;              // 按键计时
+    uint8t state;           // 当前状态 (0=释放, 1=按下)
+    uint8t lock;            // 锁定标志
+    uint8t in_combo;        // 参与组合按键标志
+    uint8t combo_triggered; // 组合按键已触发标志
+} KeyState;
 
-unsigned char k1_short_flag = 0; // 短按标志
-unsigned char k2_short_flag = 0; // 短按标志
-unsigned char k3_short_flag = 0; // 短按标志
-unsigned char k4_short_flag = 0; // 短按标志
+KeyState keys[4] = {0}; // KEY1, KEY2, KEY3, KEY4
 
-unsigned char k1_long_flag = 0; // 长按标志
-unsigned char k2_long_flag = 0; // 长按标志
-
-unsigned char combination_12 = 0; // 组合按键按下标识
-unsigned char combination_13 = 0; // 组合按键按下标识
-unsigned char combination_14 = 0; // 组合按键按下标识
+// 组合按键计时器
+unsigned int combo_timer = COMBO_TRIGGER_DELAY;
+// 组合按键标志 (按位存储: bit0=KEY1, bit1=KEY2, bit2=KEY3, bit3=KEY4)
+// 组合按键标志
+uint8t combo_flags = 0;
 
 /**
  * @brief  获取按键键码(获取清零)
@@ -44,153 +42,194 @@ unsigned char POP_KEY(void)
 	return temp;
 }
 
+
 /**
- *  按键驱动函数，在中断中调用
+ * @brief  按键扫描函数
  */
 void Key_Loop(void)
 {
-	if (KEY1) // v+按键松开
-	{
+    // 所有局部变量在函数开头声明
+    uint8t i;             // 处理第几位的按键
+    uint8t pin_state;     // 当前按键状态
+    uint8t pressed_keys;  // 统计哪些按键参加了组合按键
+    uint8t pressed_count; // 统计几个按键参与了组合按键
+    uint8t key1;
+    uint8t key2;
+    uint8t any_key_released = 0;
+    uint8t still_pressed;
 
-		k1_cnt = 0;
-		if (k1_short_flag)
-		{
-			k1_short_flag = 0;
-			KeyNum = 1;
-		}
-		if (k1_long_flag) // 在key1 长按的基础上 按住了key3
-		{
-			if (combination_12)
-			{
-				combination_12 = 0;
-			}
-			else if (combination_13)
-			{
-				combination_13 = 0;
-			}
-			else if (combination_14)
-			{
-				combination_14 = 0;
-			}
-			else
-			{
-				KeyNum = 11;
-			}
-			k1_long_flag = 0;
-		}
 
-		k1_lock_flage = 0; // 清除自锁标志
-	}
-	else if (!k1_lock_flage && !combination_12 && !combination_13 && !combination_14) // 按键持续按下
-	{
-		if (++k1_cnt > KEY_DELAY_TIME)
-		{
-			k1_short_flag = 1;
-		}
-		if (++k1_cnt > KEY_LONG_TIME)
-		{
-			if (!KEY2)
-			{
-				k1_lock_flage = 1; // 自锁防止再次进入
-				k1_long_flag = 1;
-				k1_short_flag = 0; // 清空短按
-				combination_12 = 1;
-				KeyNum = 12;
-			}
-			else if (!KEY3)
-			{
-				k1_lock_flage = 1; // 自锁防止再次进入
-				k1_long_flag = 1;
-				k1_short_flag = 0; // 清空短按
-				combination_13 = 1;
-				KeyNum = 13;
-			}
-			else if (!KEY4)
-			{
-				k1_lock_flage = 1; // 自锁防止再次进入
-				k1_long_flag = 1;
-				k1_short_flag = 0; // 清空短按
-				combination_14 = 1;
-				KeyNum = 14;
-			}
-			else
-			{
-				k1_short_flag = 0;
-				k1_long_flag = 1;
-			}
-		}
-	}
-	// 下面的按键长按足够时间后就生效，key1长按足够要松开才生效（为了兼容两个键长按）
-	if (KEY2) // v+按键松开
-	{
-		if (k2_short_flag)
-		{
-			k2_short_flag = 0;
-			KeyNum = 2;
-		}
-		k2_lock_flage = 0; // 清除自锁标志
-		k2_cnt = 0;
-	}
-	else if (!k2_lock_flage && !k1_short_flag && !k1_long_flag && !combination_12 && !combination_13 && !combination_14) // 按键持续按下
-	{
-		if (++k2_cnt > KEY_DELAY_TIME)
-		{
-			k2_short_flag = 2;
-		}
-		if (++k2_cnt > KEY_LONG_TIME)
-		{
-			k2_short_flag = 0;
-			k2_lock_flage = 2;
-			KeyNum = 22;
-		}
-	}
+    // 1. 更新按键状态
+    for (i = 0; i < 4; i++)
+    {
+        // 读取按键状态(0按下，1释放)
+        switch (i)
+        {
+        case 0:
+            pin_state = KEY1;
+            break;
+        case 1:
+            pin_state = KEY2;
+            break;
+        case 2:
+            pin_state = KEY3;
+            break;
+        case 3:
+            pin_state = KEY4;
+            break;
+        default:
+            pin_state = 1;
+            break;
+        }
 
-	///////////////////////////////////////////////////////////////
-	if (KEY3) // v+按键松开
-	{
-		if (k3_short_flag)
-		{
-			k3_short_flag = 0;
-			KeyNum = 3;
-		}
-		k3_lock_flage = 0; // 清除自锁标志
-		k3_cnt = 0;
-	}
-	else if (!k3_lock_flage && !k1_short_flag && !k1_long_flag && !combination_12 && !combination_13 && !combination_14) // 按键持续按下
-	{
-		if (++k3_cnt > KEY_DELAY_TIME)
-		{
-			k3_short_flag = 1;
-		}
-		if (++k3_cnt > KEY_LONG_TIME)
-		{
-			k3_short_flag = 0;
-			k3_lock_flage = 1;
-			KeyNum = 33;
-		}
-	}
+        if (pin_state) // 按键释放
+        {
+            if (keys[i].state) // 之前是按下状态（1）
+            {
+                keys[i].state = 0;
 
-	if (KEY4) // v+按键松开
-	{
-		if (k4_short_flag)
-		{
-			k4_short_flag = 0;
-			KeyNum = 4;
-		}
-		k4_lock_flage = 0; // 清除自锁标志
-		k4_cnt = 0;
-	}
-	else if (!k4_lock_flage && !k1_short_flag && !k1_long_flag && !combination_12 && !combination_13 && !combination_14) // 按键持续按下
-	{
-		if (++k4_cnt > KEY_DELAY_TIME)
-		{
-			k4_short_flag = 1;
-		}
-		if (++k4_cnt > KEY_LONG_TIME)
-		{
-			k4_short_flag = 0;
-			k4_lock_flage = 1;
-			KeyNum = 44;
-		}
-	}
+                // 如果按键参与了组合，清除标志但不触发短按
+                if (keys[i].in_combo)
+                {
+                    keys[i].in_combo = 0;
+                    keys[i].combo_triggered = 0; // 清除组合触发标志
+                }
+                // 短按检测 (未锁定且未参与组合)
+                else if (keys[i].cnt > KEY_DELAY_TIME &&
+                         keys[i].cnt <= KEY_LONG_TIME &&
+                         !combo_flags)
+                {
+                    KeyNum = i + 1; // 短按键值 1,2,3,4
+                }
+
+                keys[i].lock = 0;
+                any_key_released = 1; // 标记有按键释放
+            }
+            keys[i].cnt = 0;
+        }
+        else
+        { // 按键按下
+            if (!keys[i].state)
+            { // 新按下
+                keys[i].state = 1;
+                keys[i].cnt = 0;
+                keys[i].in_combo = 0; // 清除组合标志
+
+                // 如果另一个键还在组合状态，准备重新检测组合
+                if (combo_flags && !keys[i].combo_triggered)
+                {
+                    keys[i].in_combo = 1; // 标记参与组合
+                }
+            }
+
+            // 更新按键计时
+            if (keys[i].cnt < 0xFFFF)
+                keys[i].cnt++;
+
+            // 长按检测 (无组合时)
+            if (keys[i].cnt > KEY_LONG_TIME && !keys[i].lock && !combo_flags)
+            {
+                KeyNum = (i + 1) * 10 + (i + 1); // 11,22,33,44
+                keys[i].lock = 1;                // 锁定防止重复触发
+            }
+        }
+    }
+
+    // 2. 如果有按键释放，重置组合状态
+    if (any_key_released)
+    {
+        combo_flags = 0;
+        combo_timer = COMBO_TRIGGER_DELAY;
+
+        // 检查是否还有按键处于组合状态
+        still_pressed = 0;
+        for (i = 0; i < 4; i++)
+        {
+            if (keys[i].in_combo)
+            {
+                still_pressed |= (1 << i);
+            }
+        }
+
+        // 如果有按键仍然处于组合状态，重新开始组合检测
+        if (still_pressed)
+        {
+            combo_flags = still_pressed;
+            combo_timer = COMBO_TRIGGER_DELAY;
+        }
+    }
+
+    // 3. 组合按键检测(统计组合按键)
+    pressed_keys = 0;
+    pressed_count = 0;
+    for (i = 0; i < 4; i++)
+    {
+        if (keys[i].state)
+        {
+            pressed_keys |= (1 << i);
+            pressed_count++;
+        }
+    }
+
+    if (pressed_count >= 2)
+    { // 至少两个按键按下
+        if (!combo_flags)
+        {
+            // 开始组合按键检测
+            combo_flags = pressed_keys;
+            combo_timer = COMBO_TRIGGER_DELAY;
+        }
+        else if (combo_timer < 0xFFFF)
+        {
+            combo_timer += 1;
+        }
+
+        // 组合按键触发 (消抖后并添加延迟)
+        if (combo_timer > KEY_DELAY_TIME + COMBO_DELAY_TIME)
+        {
+            // 找出两个按下的按键
+            key1 = 0;
+            key2 = 0;
+            for (i = 0; i < 4; i++)
+            {
+                if (combo_flags & (1 << i))
+                {
+                    if (!key1)
+                    {
+                        key1 = i + 1;
+                    }
+                    else if (!key2)
+                    {
+                        key2 = i + 1;
+                    }
+                }
+            }
+
+            // 生成组合键值 (小索引在前)
+            if (key1 && key2)
+            {
+                KeyNum = (key1 < key2) ? (key1 * 10 + key2) : (key2 * 10 + key1);
+
+                // 标记参与组合的按键
+                for (i = 0; i < 4; i++)
+                {
+                    if (combo_flags & (1 << i))
+                    {
+                        keys[i].in_combo = 1;        // 标记参与组合
+                        keys[i].combo_triggered = 1; // 标记已触发
+                        keys[i].lock = 1;            // 锁定防止长按重复
+                    }
+                }
+
+                // 不清除组合标志，允许重新检测
+                combo_timer = 0; // 重置计时器(组合按键连续触发频率降低)
+            }
+        }
+    }
+    else
+    {
+        // 少于两个按键按下，清除组合状态
+        combo_flags = 0;
+        combo_timer = COMBO_TRIGGER_DELAY;
+    }
 }
