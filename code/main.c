@@ -1,5 +1,6 @@
 #include <STC15.H>
 #include <stdio.h>
+#include <Delay.h>
 #include "UART.h"
 #include "config/Config.h"
 #include "config/EEPROM.h"
@@ -269,16 +270,19 @@ void InitSystem()
 	bit autoMatic = 0;
 	POWER_STATUS = 0x00;
 
+	AUXR &= ~0x10; // 定时器2停止计时
 	// 读取系统持久化配置，返回是否需要自动搜台
 	autoMatic = CONF_SYS_INIT();
 	key_function_flag = 0x00;
 	LED_TIMED_STANDBY = 0x1E;
 
+	Timer0Init();
+
 	// 初始化收音机
+	Delay(300); // 等待收音机芯片上的稳定后再初始化
 	RDA5807M_init();
 
-	Timer0Init();
-	AUXR &= ~0x10; // 定时器2停止计时
+
 
 	// 打开数码管显示、键盘轮询
 	LED_RESET_SLEEP_TIME();
@@ -302,14 +306,6 @@ void main()
 	// printf("power on \r\n");
 	while (1)
 	{
-		// 是否切换到显示RSSI
-		if (rssi_read_flag)
-		{
-			LED_RSSI = RDA5807M_Read_RSSI();
-			LED_SET_DISPLY_TYPE(2);
-			rssi_read_flag = 0; // 重置标记
-		}
-
 		// 读取用户按键输入
 		Key_num = POP_KEY();
 
@@ -323,6 +319,14 @@ void main()
 			}
 
 			continue;
+		}
+
+				// 是否切换到显示RSSI
+		if (rssi_read_flag)
+		{
+			LED_RSSI = RDA5807M_Read_RSSI();
+			LED_SET_DISPLY_TYPE(2);
+			rssi_read_flag = 0; // 重置标记
 		}
 
 		// 关机时间到

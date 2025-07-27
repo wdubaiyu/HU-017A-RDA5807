@@ -4,7 +4,7 @@
 #include "led/myLed.h"
 
 //,0xC7 -->L11  0x89-->H12
-uint8t code NixieTable[] = {
+uint8t xdata NixieTable[] = {
 	0xC0, 0xF9, 0xA4, 0xB0, 0x99,		// (0)0,1,2,3,4
 	0x92, 0x82, 0xF8, 0x80, 0x90, 0x7F, // (5)5,6,7,8,9,点(10)
 	0x88, 0x83, 0xC6, 0xA1, 0x86,		// (11)A,b,C,d,E
@@ -12,14 +12,14 @@ uint8t code NixieTable[] = {
 	0x89, 0xC7, 0x12, 0xC8, 0xAB,		// (21)L,H,S,N,n
 	0xF7, 0xBF};						// (26)_ -
 
-uint8t code NixieTableDp[] = {
+uint8t xdata NixieTableDp[] = {
 	0x40, 0x79, 0x24, 0x30, 0x19,
 	0x12, 0x02, 0x78, 0x00, 0x10, 0x7F,
 	0xC7, 0x89};
 
 uint16t LED_FRE_REAL = 8700;
 uint16t LED_DISPLAY_REC_COUNT = 0x00;
-uint8t LED_DISPLAY_TYPE = 0x0A;
+uint8t LED_DISPLAY_TYPE = 0x06;
 uint8t LED_RSSI = 0x00;
 uint8t LED_SNR = 0x00;
 uint8t LED_TIMED_STANDBY = 0x00;
@@ -169,6 +169,12 @@ void DispayPOLL()
 	CallNixieTube(0x17, 0xFF, 0xFF, cycle_in_freq_rssi, 0xFF);
 }
 
+// 展示 ----
+void DispayHyphen()
+{
+	CallNixieTube(0x1B, 0x1B, 0x1B, 0x1B, 0xFF);
+}
+
 /**
  * 查询p所在的位置是否有效显示位置
  */
@@ -211,7 +217,7 @@ void CallNixieTube(uint8t a, b, c, d, dp)
 			LED_POLLING_POSTITION = 0;
 		}
 	}
-	//更改值前关闭所有数码管位显
+	// 更改值前关闭所有数码管位显
 	P20 = P21 = P22 = P23 = 1;
 
 	if (LED_POLLING_POSTITION == 0)
@@ -264,6 +270,8 @@ void DISPLY()
 		DispayVl(); // 音量
 	if (LED_DISPLAY_TYPE == 5)
 		DispayPOLL(); // 展示POLL
+	if (LED_DISPLAY_TYPE == 6)
+		DispayHyphen(); // 展示----
 
 	if (LED_DISPLAY_TYPE == 101)
 		DispaySNR(); // 展示SNR
