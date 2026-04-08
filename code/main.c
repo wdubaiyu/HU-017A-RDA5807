@@ -73,9 +73,10 @@ void userInput()
 	// 自动搜台 取消
 	if (search_SELLP_flag > 0 && Key_NUM == 3)
 	{
+		uint8t was_sleep_mode = (search_SELLP_flag == 11);
 		search_SELLP_flag = 0;
 		DISPLAY_type = 10;
-		if (search_SELLP_flag == 11)
+		if (was_sleep_mode)
 		{
 			sys_sleep_mode = 0;
 		}
@@ -85,11 +86,12 @@ void userInput()
 	// 自动搜台 确认开始
 	if (search_SELLP_flag > 0 && Key_NUM == 4)
 	{
+		uint8t was_sleep_mode = (search_SELLP_flag == 11);
 		// 开始自动搜台
 		RDA5807M_Search_Automatic();
 		LED_FRE_REAL = sys_freq;
 		search_SELLP_flag = 0;
-		if (search_SELLP_flag == 11)
+		if (was_sleep_mode)
 		{
 			sys_sleep_mode = 0;
 		}
@@ -225,14 +227,15 @@ void main()
 
 	if (CONF_SYS_INIT()) // 加载上一次系统配置,返回是否需要自动搜台
 	{
+		uint8t need_restore_sleep = 0;
 		if (!sys_sleep_mode)
 		{
 			sys_sleep_mode = 1;
-			search_SELLP_flag == 11;
+			need_restore_sleep = 1;
 		}
 		RDA5807M_Search_Automatic();
 		LED_FRE_REAL = sys_freq;
-		if (search_SELLP_flag == 11)
+		if (need_restore_sleep)
 		{
 			sys_sleep_mode = 0;
 		}
@@ -260,7 +263,7 @@ void main()
 void Timer0_Rountine(void) interrupt 1
 {
 	// 循环次数记数
-	static uint16t T0Count1, T0Count2;
+	static uint16t T0Count2;
 	Led_Loop();
 	Key_Loop();
 

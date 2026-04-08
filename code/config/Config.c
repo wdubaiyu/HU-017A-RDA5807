@@ -42,10 +42,11 @@ void CONF_SET_FREQ(uint16t freq)
     freq_array[0] = freq >> 8;
     freq_array[1] = freq;
     // 清空扇区
-    IapEraseSector(addr_freq);
-    IapProgramByte(addr_freq, freq_array[0]);
-    Delay_Ms_(2);
-    IapProgramByte(addr_freq + 1, freq_array[1]);
+	IapEraseSector(addr_freq);
+	IapProgramByte(addr_freq, freq_array[0]);
+	Delay_Ms_(2);
+	IapProgramByte(addr_freq + 1, freq_array[1]);
+	Delay_Ms_(2);
 
     if (sys_radio_index != 0xFF)
     {
@@ -115,7 +116,7 @@ uint8t CONF_SYS_INIT(void)
     // 从eeprom获取音量并纠正
     sys_vol = IapReadByte(addr_vol);
     // printf("read config vol %bu\r\n", sys_vol);
-    if (sys_vol < 0 | sys_vol > 15)
+    if (sys_vol < 0 || sys_vol > 15)
     {
         sys_vol = 5;
     }

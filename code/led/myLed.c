@@ -76,7 +76,6 @@ void DispayF(uint16t temp)
 // 显示频率(loop调用时候显示为递增效果)
 void DispayFRE(void)
 {
-
 	if (LED_FRE_REAL == sys_freq)
 	{
 		DispayF(LED_FRE_REAL);
@@ -90,29 +89,22 @@ void DispayFRE(void)
 		return;
 	}
 
-	// 正向  数码管频率在增加的效果
+	// 优化：每次只更新一步，避免在中断中执行长时间循环
 	if (LED_SEEK_D)
 	{
-		while (LED_FRE_REAL != sys_freq)
+		if (++LED_FRE_REAL > 10800)
 		{
-			DispayF(++LED_FRE_REAL);
-			if (LED_FRE_REAL > 10800)
-			{
-				LED_FRE_REAL = 8700;
-			}
+			LED_FRE_REAL = 8700;
 		}
 	}
-	else if (LED_SEEK_D == 0)
+	else
 	{
-		while (LED_FRE_REAL != sys_freq)
+		if (--LED_FRE_REAL < 8700)
 		{
-			DispayF(--LED_FRE_REAL);
-			if (LED_FRE_REAL < 8700)
-			{
-				LED_FRE_REAL = 10800;
-			}
+			LED_FRE_REAL = 10800;
 		}
 	}
+	DispayF(LED_FRE_REAL);
 }
 
 // 显示音量

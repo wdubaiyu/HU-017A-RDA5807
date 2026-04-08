@@ -3,17 +3,6 @@
 
 #include "config/Config.h"
 
-#define BAND_87_108 1
-#define BAND_76_91 2
-#define BAND_76_108 3
-#define BAND_65_76 4
-#define BAND_50_76 5
-
-#define Space_100kHz 1
-#define Space_200kHz 2
-#define Space_50KHz 3
-#define Space_25KHz 4
-
 /**
  * @brief 初始化
  */
@@ -82,20 +71,9 @@ void RDA5807M_CHANGE_MUTE();
 uint8t RDA5807M_SetMutea_status();
 
 /**
- * @brief 将输出设为空闲状态（喇叭高阻）
- * @param flage：1是空闲，0是解除空闲
- * @return 无
- */
-void RDA5807M_Set_Output_Idle(uint8t flage);
-/**
  * 读取RSSI
  * RDA5807M_Read_RSSI
  */
 uint8t RDA5807M_Read_RSSI(void);
-
-/**
- * 读取芯片id
- */
-uint16t RDA5807M_CHIPID(void);
 
 #endif

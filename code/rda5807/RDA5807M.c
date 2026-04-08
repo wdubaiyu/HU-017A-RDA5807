@@ -258,7 +258,7 @@ void RDA5807M_Set_SNR(uint8t snr)
  * @param round 是否环绕搜台
  * @return 电台频率
  */
-uint16t seek(uint8t direction, round)
+uint16t seek(uint8t direction, uint8t round)
 {
     uint16t band;
     uint16t freq;
@@ -464,25 +464,6 @@ void RDA5807M_CHANGE_MUTE()
 }
 
 /**
- * @brief 将输出设为空闲状态（喇叭高阻）
- * @param Bool：1是空闲，0是解除空闲
- * @return 无
- */
-void RDA5807M_Set_Output_Idle(uint8t flage)
-{
-    uint16t impedance;
-    impedance = RDA5807M_Read_Reg(0x02);
-    if (flage)
-    {
-        impedance &= ~(1 << 15);
-    }
-    else
-    {
-        impedance |= 1 << 15;
-    }
-    RDA5807M_Write_Reg(0x02, impedance);
-}
-/**
  * @brief 获取当前频率的信号强度
  * @param 无
  * @return 信号强度(0-127)
@@ -493,108 +474,4 @@ uint8t RDA5807M_Read_RSSI(void)
     temp_rssi = RDA5807M_Read_Reg(0x0B);
     temp_rssi >>= 9;
     return (uint8t)temp_rssi;
-}
-
-/**
- * @brief  芯片id CHIPID[7:0]  ---- 15:8
- * @param 无
- * @return CHIPID
- */
-uint16t RDA5807M_CHIPID(void)
-{
-    return RDA5807M_Read_Reg(0x00);
-}
-/**
- * @brief 设置频率段
- * @param Range：频率段，来自频率段选择组的宏定义，如BAND_0
- *  BAND = 0 Frequency = Channel Spacing (kHz) x CHAN+ 87.0 MHz
- *  BAND = 1 or 2 Frequency = Channel Spacing (kHz) x CHAN + 76.0 MHz
- *  BAND = 3 Frequency = Channel Spacing (kHz) x CHAN + 65.0 MHz
- * @return 无
-
- * @date 2022-07-23 11:16:42
- */
-void RDA5807M_Set_FreqRange(uint8t Range)
-{
-    uint16t band;
-    band = RDA5807M_Read_Reg(0x03);
-    if (Range == BAND_87_108)
-    { /*0x03[3:2]=00 0x07[9]=x*/
-        band &= ~(1 << 3);
-        band &= ~(1 << 2);
-        RDA5807M_Write_Reg(0x02, band);
-    }
-    else if (Range == BAND_76_91)
-    { /*0x03[3:2]=01 0x07[9]=x*/
-        band &= ~(1 << 3);
-        band |= 1 << 2;
-        RDA5807M_Write_Reg(0x02, band);
-    }
-    else if (Range == BAND_76_108)
-    { /*0x03[3:2]=10 0x07[9]=x*/
-        band |= 1 << 3;
-        band &= ~(1 << 2);
-        RDA5807M_Write_Reg(0x02, band);
-    }
-    else if (Range == BAND_65_76)
-    { /*0x03[3:2]=11 0x07[9]=1*/
-        band |= 1 << 2;
-        band |= 1 << 3;
-        RDA5807M_Write_Reg(0x02, band);
-        band = RDA5807M_Read_Reg(0x07);
-        band |= 1 << 9;
-        RDA5807M_Write_Reg(0x07, band);
-    }
-    else if (Range == BAND_50_76)
-    { /*0x03[3:2]=11 0x07[9]=0*/
-        band |= 1 << 2;
-        band |= 1 << 3;
-        RDA5807M_Write_Reg(0x02, band);
-        band = RDA5807M_Read_Reg(0x07);
-        band &= ~(1 << 9);
-        RDA5807M_Write_Reg(0x07, band);
-    }
-}
-
-/**
- * @brief 设置频率步进
- * @param space_step：间隔，从频率间隔选择组宏定义里选取，如space_step_100kHz
- * @return 无
- */
-void RDA5807M_Set_Freqspace_step(uint8t SPACE)
-{
-
-    uint16t band;
-    band = RDA5807M_Read_Reg(0x03);
-    if (SPACE == Space_100kHz)
-    { /*0x03[1:0]=00*/
-        band &= ~(1 << 1);
-        band &= ~(1 << 0);
-    }
-    else if (SPACE == Space_200kHz)
-    { /*0x03[1:0]=01*/
-        band &= ~(1 << 1);
-        band |= 1 << 0;
-    }
-    else if (SPACE == Space_50KHz)
-    { /*0x03[1:0]=10*/
-        band |= 1 << 1;
-        band &= ~(1 << 0);
-    }
-    else if (SPACE == Space_25KHz)
-    { /*0x03[1:0]=11*/
-        band |= 1 << 1;
-        band |= 1 << 0;
-    }
-    RDA5807M_Write_Reg(0x03, band);
-}
-/**
- * @brief 软件复位 Soft reset && NEW_METHOD New Demodulate Method Enable, can improve the receive sensitivity about 1dB.
- * @param 无
- * @return
- */
-void RDA5807M_Reast(void)
-{
-    RDA5807M_Write_Reg(0x02, 0x0003); // 复位
-    Delay(50);
 }
