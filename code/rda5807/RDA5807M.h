@@ -46,10 +46,10 @@ void RDA5807M_Set_SNR(uint8t snr);
 uint16t RDA5807M_Seek(uint8t direction);
 
 /**
- * @brief 点前是否是电台
- * @return 1 = 是   0 = 否
+ * @brief 当前频率是否是有效电台
+ * @return 1 = 是电台   0 = 不是电台
  */
-uint8t RDA5807M_Radio_TRUE(void);
+uint8t RDA5807M_IsStationPresent(void);
 
 /**
  * 搜索全部电台
@@ -62,17 +62,11 @@ void RDA5807M_Search_Automatic(void);
  */
 void RDA5807M_Set_Volume(uint8t vol);
 
-/**
- * @brief 设置静音
- * @param Bool：0是静音，1是解除静音
- * @return 无
- */
-void RDA5807M_SetMUTE(uint8t mute);
 
 /**
- * 静音模式和非静音模式来回切换，静音不持久化
+ * 开启静音模式 静音不持久化
  */
-void RDA5807M_CHANGE_MUTE();
+void RDA5807M_SET_MUTE();
 
 /**
  * @brief 设置静音

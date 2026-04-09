@@ -11,23 +11,22 @@ sbit KEY3 = P1 ^ 5; // f+
 sbit KEY4 = P1 ^ 4; // f-
 
 
-// 按键状态结构体
+// 按键状态结构体 (移到xdata节省DATA空间)
 typedef struct
 {
-    unsigned int cnt;              // 按键计时
     uint8t state;           // 当前状态 (0=释放, 1=按下)
     uint8t lock;            // 锁定标志
     uint8t in_combo;        // 参与组合按键标志
     uint8t combo_triggered; // 组合按键已触发标志
+    uint16t cnt;            // 按键计时
 } KeyState;
 
-KeyState keys[4] = {0}; // KEY1, KEY2, KEY3, KEY4
+xdata KeyState keys[4]; // 移至xdata区
 
-// 组合按键计时器
-unsigned int combo_timer = COMBO_TRIGGER_DELAY;
-// 组合按键标志 (按位存储: bit0=KEY1, bit1=KEY2, bit2=KEY3, bit3=KEY4)
+// 组合按键计时器 (移至xdata)
+xdata uint16t combo_timer;
 // 组合按键标志
-uint8t combo_flags = 0;
+xdata uint8t combo_flags;
 
 /**
  * @brief  获取按键键码(获取清零)
@@ -231,5 +230,23 @@ void Key_Loop(void)
         // 少于两个按键按下，清除组合状态
         combo_flags = 0;
         combo_timer = COMBO_TRIGGER_DELAY;
+    }
+}
+
+/**
+ * 按键初始化
+ */
+void Key_Init(void)
+{
+    uint8t i;
+    combo_timer = COMBO_TRIGGER_DELAY;
+    combo_flags = 0;
+    for (i = 0; i < 4; i++)
+    {
+        keys[i].state = 0;
+        keys[i].lock = 0;
+        keys[i].in_combo = 0;
+        keys[i].combo_triggered = 0;
+        keys[i].cnt = 0;
     }
 }

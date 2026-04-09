@@ -123,7 +123,7 @@ void CONF_RADIO_ERASE(void)
 void CONF_RADIO_PUT(uint8t index, uint16t freq)
 {
     uint16t temp_addr;
-    uint8t freq_array_read[2] = {0x00};
+    // uint8t freq_array_read[2] = {0x00};
     uint8t freq_array[2] = {0x00};
     freq_array[0] = freq >> 8;
     freq_array[1] = freq;
@@ -132,8 +132,7 @@ void CONF_RADIO_PUT(uint8t index, uint16t freq)
     Delay(4);
     IapProgramByte(temp_addr + 1, freq_array[1]);
 
-    IapReadArrayByte(temp_addr, freq_array_read);
-
+    // IapReadArrayByte(temp_addr, freq_array_read);
     // printf("CONF_RADIO_PUT GET %d   %bu\r\n", CONF_READ_RAIDO_FREQ(temp_addr), index);
 }
 

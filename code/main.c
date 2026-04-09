@@ -198,7 +198,7 @@ void userInput(uint8t Key_num)
 	if (Key_num == 22)
 	{
 		LED_SET_DISPLY_TYPE(4); // 数码管显示音量
-		RDA5807M_CHANGE_MUTE();
+		RDA5807M_SET_MUTE();
 		return;
 	}
 
@@ -217,7 +217,7 @@ void userInput(uint8t Key_num)
 	if (Key_num == 2)
 	{
 		LED_SET_DISPLY_TYPE(4); // 数码管显示音量
-		// 最小音量1
+		// 最小音量0
 		if (sys_vol > 0)
 		{
 			RDA5807M_Set_Volume(sys_vol - 1);
@@ -276,6 +276,7 @@ void InitSystem()
 	key_function_flag = 0x00;
 	LED_TIMED_STANDBY = 0x1E;
 
+	Key_Init();     // 初始化按键
 	Timer0Init();
 
 	// 初始化收音机

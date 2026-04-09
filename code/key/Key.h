@@ -29,4 +29,9 @@ unsigned char POP_KEY(void);
  */
 void Key_Loop(void);
 
+/**
+ * 按键初始化
+ */
+void Key_Init(void);
+
 #endif

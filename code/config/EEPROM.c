@@ -62,6 +62,10 @@ uint8t IapReadByte(uint16t addr)
     return dat;             // 返回
 }
 
+/**
+ * 读取 指定连续sizeOf(dat)字节
+ * @param addr 读取地址
+ */
 void IapReadArrayByte(uint16t addr, uint8t *dat)
 {
     uint8t i;
@@ -103,34 +107,4 @@ void IapProgramByte(uint16t addr, uint8t dat)
     IapIdle();
 }
 
-
-/*----------------------------
-写一字节数据到ISP/IAP/EEPROM区域
-----------------------------*/
-//不知道为什么一次性写多个字节回出问题(写完后高8位全都一样)。只能多次调用写一个字节，且不能在这个文件里
-
-// void IapProgramArrayByte(uint16t addr, uint8t *dat)
-// {
-//     uint8t i;
-//     uint16t temp_addr;
-
-//     EA = 0;
-//     IAP_CONTR = ENABLE_IAP; // 使能IAP
-//     IAP_CMD = CMD_PROGRAM;  // 设置IAP命令
-
-//     for (i = 0; i < sizeof(dat); i++)
-//     {
-//         temp_addr = addr + i;
-//         IAP_ADDRL = temp_addr;      // 设置IAP低地址
-//         IAP_ADDRH = temp_addr >> 8; // 设置IAP高地址
-//         IAP_DATA = dat[i];          // 写ISP/IAP/EEPROM数据
-//         IAP_TRIG = 0x5a;            // 写触发命令(0x5a)
-//         IAP_TRIG = 0xa5;            // 写触发命令(0xa5)
-//         _nop_();                    // 等待ISP/IAP/EEPROM操作完成
-//         _nop_();                    // 等待ISP/IAP/EEPROM操作完成
-//     }
-
-//     IapIdle();
-//     EA = 1;
-// }
 
