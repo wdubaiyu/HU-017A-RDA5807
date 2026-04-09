@@ -332,7 +332,7 @@ void RDA5807M_Search_Automatic()
 
 
 /**
- * @brief 设置音量
+ * @brief 设置音量 优先解除静音
  * @param Val:音量值(0-15)
  * @return 无
  */
@@ -340,7 +340,7 @@ void RDA5807M_Set_Volume(uint8t vol)
 {
     uint16t temp_reg;
 
-    // 优先处理静音状态
+    // 优先解除静音
     if (!MUTE_STATUS)
     {
         temp_reg = RDA5807M_Read_Reg(0x02);

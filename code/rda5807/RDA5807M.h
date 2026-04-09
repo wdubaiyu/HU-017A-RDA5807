@@ -57,8 +57,8 @@ uint8t RDA5807M_IsStationPresent(void);
 void RDA5807M_Search_Automatic(void);
 
 /**
- * 设置音量大小
- * @param 1-15
+ * 设置音量大小 设置音量 优先解除静音
+ * @param 0-15
  */
 void RDA5807M_Set_Volume(uint8t vol);
 
