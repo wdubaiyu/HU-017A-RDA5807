@@ -5,11 +5,16 @@
 // 每个扇区512字节
 #define addr_vol 0x0000
 // 存放当前频率
+
 #define addr_freq 0x0200
 // 存放当前index
 #define addr_freq_index 0x0202
-// 
+
+// 存放睡眠模式
 #define addr_sleep_mode 0x0400
+// 存放POLL模式
+#define addr_poll_mode 0x0402
+
 // 存放电台最大数量
 #define addr_radio 0x0600
 // 存放电台频率开始（两个byte一个台）

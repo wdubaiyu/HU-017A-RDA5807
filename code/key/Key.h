@@ -1,8 +1,10 @@
 #ifndef __KEY_H__
 #define __KEY_H__
 
-#define KEY_DELAY_TIME 20
-#define KEY_LONG_TIME 600
+#define KEY_DELAY_TIME 20                          // 短按消抖
+#define KEY_LONG_TIME 1000                         // 长按触发
+#define COMBO_TRIGGER_DELAY 400                    // 组合按键记次基准值（组合按键计时器默认值，当组合按键一直长按时获取键值后置为零）
+#define COMBO_DELAY_TIME 100 + COMBO_TRIGGER_DELAY // 组合按键触发添加延迟
 
 /**
 
@@ -26,5 +28,10 @@ unsigned char POP_KEY(void);
  * 轮询查询键盘
  */
 void Key_Loop(void);
+
+/**
+ * 按键初始化
+ */
+void Key_Init(void);
 
 #endif

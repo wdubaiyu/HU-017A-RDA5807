@@ -85,7 +85,7 @@
             <nStopA1X>0</nStopA1X>
             <nStopA2X>0</nStopA2X>
           </AfterMake>
-          <SelectedForBatchBuild>0</SelectedForBatchBuild>
+          <SelectedForBatchBuild>1</SelectedForBatchBuild>
           <SVCSIdString></SVCSIdString>
         </TargetCommonOption>
         <CommonProperty>
@@ -379,26 +379,6 @@
               <FilePath>.\Delay.h</FilePath>
             </File>
             <File>
-              <FileName>UART.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\UART.c</FilePath>
-            </File>
-            <File>
-              <FileName>UART.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\UART.h</FilePath>
-            </File>
-            <File>
-              <FileName>time0.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\time0\time0.c</FilePath>
-            </File>
-            <File>
-              <FileName>time0.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\time0\time0.h</FilePath>
-            </File>
-            <File>
               <FileName>Config.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\config\Config.c</FilePath>
@@ -467,6 +447,26 @@
               <FileName>Key.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\key\Key.h</FilePath>
+            </File>
+            <File>
+              <FileName>time0.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\time\time0.c</FilePath>
+            </File>
+            <File>
+              <FileName>time0.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\time\time0.h</FilePath>
+            </File>
+            <File>
+              <FileName>time2.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\time\time2.c</FilePath>
+            </File>
+            <File>
+              <FileName>time2.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\time\time2.h</FilePath>
             </File>
           </Files>
         </Group>

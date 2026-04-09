@@ -3,6 +3,6 @@
 
 
 void Delay(unsigned int xms);
-void Delay_Ms_(unsigned int xms);
+void Delay(unsigned int xms);
 void Delay_us_(unsigned int xms);
 #endif
