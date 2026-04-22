@@ -1,5 +1,5 @@
-#include <STC15.H>
-#include <stdio.h>
+#include "stc15.h"
+#include "stdio.h"
 #include "Delay.h"
 #include "UART.h"
 #include "config/Config.h"

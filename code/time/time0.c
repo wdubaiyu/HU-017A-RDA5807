@@ -1,5 +1,5 @@
 #include "time0.h"
-#include <stc15.h>
+#include "stc15.h"
 
 void Timer0Init(void)		//1毫秒@33.1776MHz
 {
@@ -14,6 +14,8 @@ void Timer0Init(void)		//1毫秒@33.1776MHz
 	ET0 = 1; // 打开中断允许寄存器
 	EA = 1;	 // 打开中断控制总开关
 }
+
+
 
 /**
 

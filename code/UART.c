@@ -1,5 +1,5 @@
-#include <STC15.H>
-#include <stdio.h>
+#include "stc15.h"
+#include "stdio.h"
 
 void UartInit(void)		//9600bps@27.000MHz
 {

@@ -1,6 +1,6 @@
 #include <intrins.h>
-#include <stdio.h>
-#include <stc15.h>
+#include "stdio.h"
+#include "stc15.h"
 #include "Delay.h"
 #include "RDA5807M.h"
 #include "I2C.h"

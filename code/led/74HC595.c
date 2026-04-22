@@ -1,4 +1,4 @@
-#include <STC15.H>
+#include "stc15.h"
 #include "74HC595.h"
 #include "Delay.h"
 

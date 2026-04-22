@@ -1,5 +1,5 @@
 #include "time2.h"
-#include <stc15.h>
+#include "stc15.h"
 
 void Timer2Init() // 20毫秒@33.1776MHz
 {

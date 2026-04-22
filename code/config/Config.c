@@ -1,5 +1,5 @@
-#include <stc15.h>
-#include <stdio.h>
+#include "stc15.h"
+#include "stdio.h"
 #include "Delay.h"
 #include "Config.h"
 #include "EEPROM.h"

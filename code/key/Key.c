@@ -1,5 +1,5 @@
-#include <STC15.H>
-#include <stdio.h>
+#include "stc15.h"
+#include "stdio.h"
 #include "config/Config.h"
 #include "Key.h"
 
