@@ -4,34 +4,34 @@
 #include "led/74HC595.h"
 #include "led/myLed.h"
 //,0xC7 -->L11  0x89-->H12
-uint8t code NixieTable[] = {
+uint8_t code NixieTable[] = {
 	0xC0, 0xF9, 0xA4, 0xB0, 0x99,		// 0,1,2,3,4
 	0x92, 0x82, 0xF8, 0x80, 0x90, 0x7F, // 5,6,7,8,9,点
 	0x88, 0x83, 0xC6, 0xA1, 0x86,		// A,b,C,d,E
 	0x8E, 0x8C, 0xC1, 0xCE, 0x91,		// F,P,U,T,y
 	0x89, 0xC7, 0x12, 0xC8, 0xAB};		// L,H,S,N,n
-uint8t code NixieTableDp[] = {
+uint8_t code NixieTableDp[] = {
 	0x40, 0x79, 0x24, 0x30, 0x19,
 	0x12, 0x02, 0x78, 0x00, 0x10, 0x7F,
 	0xC7, 0x89};
 
-uint16t LED_FRE_REAL = 8700;
-uint8t DISPLAY_type = 0x0A;
-uint8t LED_RSSI = 0x00;
-uint8t LED_SNR = 0x00;
+uint16_t LED_FRE_REAL = 8700;
+uint8_t DISPLAY_type = 0x0A;
+uint8_t LED_RSSI = 0x00;
+uint8_t LED_SNR = 0x00;
 // 手动搜台方向
 bit LED_SEEK_D = 1;
 // 手动搜台标志 1列表换，0搜台
 bit LED_HAND_MARK = 1;
 // 睡眠模式剩余时间
-uint16t LED_SELL_TIME = 0x1F40; // 统计睡眠模式剩余时间8s
+uint16_t LED_SELL_TIME = 0x1F40; // 统计睡眠模式剩余时间8s
 
-void DisplayNUM(uint8t a, b, c, d, dp);
+void DisplayNUM(uint8_t a, b, c, d, dp);
 
 /**
  内部使用 根据dpf判断是否需要小数点
 **/
-char getData(uint8t a, dpf)
+char getData(uint8_t a, dpf)
 {
 	if (dpf)
 	{
@@ -57,9 +57,9 @@ void DispaySELLP()
 }
 
 // 显示频率
-void DispayF(uint16t temp)
+void DispayF(uint16_t temp)
 {
-	uint8t NUM_GE, NUM_SHI, NUM_BAI, NUM_DEC;
+	uint8_t NUM_GE, NUM_SHI, NUM_BAI, NUM_DEC;
 	NUM_BAI = temp / 10000;
 	NUM_SHI = (temp % 10000) / 1000;
 	NUM_GE = (temp % 1000) / 100;
@@ -116,7 +116,7 @@ void DispayVl()
 // 显示信号质量
 void DispayRSSI()
 {
-	uint8t NUM_GE, NUM_SHI, NUM_BAI;
+	uint8_t NUM_GE, NUM_SHI, NUM_BAI;
 	NUM_BAI = LED_RSSI / 100;
 	NUM_SHI = (LED_RSSI % 100) / 10;
 	NUM_GE = (LED_RSSI % 10);
@@ -132,19 +132,19 @@ void DispayRSSI()
 
 void DispaySNR()
 {
-	uint8t NUM_GE, NUM_SHI;
+	uint8_t NUM_GE, NUM_SHI;
 	NUM_GE = (LED_SNR % 10);
 	NUM_SHI = (LED_SNR % 100) / 10;
 	DisplayNUM(23, 25, NUM_SHI, NUM_GE, 0xFF);
 }
 
 // 显示数字 内部使用
-void DisplayNUM(uint8t a, b, c, d, dp)
+void DisplayNUM(uint8_t a, b, c, d, dp)
 {
 	// 数码管显示位数轮询（0~3）
-	static uint8t LED_POLLING_POSTITION = 0;
-	uint8t code de = 1;
-	uint8t sizeOfNixie = sizeof(NixieTable);
+	static uint8_t LED_POLLING_POSTITION = 0;
+	uint8_t code de = 1;
+	uint8_t sizeOfNixie = sizeof(NixieTable);
 
 	if (LED_POLLING_POSTITION == 0)
 	{
@@ -210,22 +210,23 @@ void DISPLY()
 		DispaySNR(); // 展示SNR
 }
 
-void Led_CHANGE_SLEEP_MODE()
-{
-
-	CONF_CHANGE_SLEEP_MODE();
-	DISPLAY_type = 3;
-	resetSleepTime();
-}
-
 // 睡眠模式剩余时间重置
-void resetSleepTime()
+void LED_RESET_SLEEP_TIME()
 {
 	if (sys_sleep_mode == 0)
 	{
 		LED_SELL_TIME = 0x1F40;
 	}
 }
+
+void LED_CHANGE_SLEEP_MODE(void)
+{
+	CONF_CHANGE_SLEEP_MODE();
+	DISPLAY_type = 3;
+	LED_RESET_SLEEP_TIME();
+}
+
+
 
 // 判断是否显示
 void Led_Loop()

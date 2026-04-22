@@ -458,16 +458,6 @@
               <FileType>5</FileType>
               <FilePath>.\time\time0.h</FilePath>
             </File>
-            <File>
-              <FileName>time2.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\time\time2.c</FilePath>
-            </File>
-            <File>
-              <FileName>time2.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\time\time2.h</FilePath>
-            </File>
           </Files>
         </Group>
       </Groups>

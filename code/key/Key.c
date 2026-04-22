@@ -20,15 +20,15 @@ typedef enum {
 
 // 按键数据结构
 typedef struct {
-    uint8t pin_num;          // 按键编号 1-4
-    uint16t cnt;             // 计数器
+    uint8_t pin_num;          // 按键编号 1-4
+    uint16_t cnt;             // 计数器
     KeyState state;          // 当前状态
-    uint8t key_num_short;    // 短按键值
-    uint8t key_num_long;     // 长按键值
+    uint8_t key_num_short;    // 短按键值
+    uint8_t key_num_long;     // 长按键值
 } Key_TypeDef;
 
 // 读取按键引脚状态
-static bit ReadKeyPin(uint8t pin_num)
+static bit ReadKeyPin(uint8_t pin_num)
 {
     switch (pin_num) {
         case 1: return KEY1;
@@ -49,8 +49,8 @@ static Key_TypeDef Keys[] = {
 
 #define KEY_NUM  (sizeof(Keys) / sizeof(Keys[0]))
 
-static volatile uint8t KeyNum = 0;       // 按键返回值
-static volatile uint8t Key1LongPressed = 0;   // KEY1 长按标志（用于组合键）
+static volatile uint8_t KeyNum = 0;       // 按键返回值
+static volatile uint8_t Key1LongPressed = 0;   // KEY1 长按标志（用于组合键）
 
 /**
  * @brief  获取按键键码(获取清零)
@@ -67,7 +67,7 @@ unsigned char POP_KEY(void)
  * @brief 检查组合按键
  * @return 组合键值 (12,13,14) 或 0
  */
-static uint8t CheckCombinationKeys(void)
+static uint8_t CheckCombinationKeys(void)
 {
     if (Key1LongPressed) {
         if (!KEY2) return 12;
@@ -82,8 +82,8 @@ static uint8t CheckCombinationKeys(void)
  */
 void Key_Loop(void)
 {
-    uint8t i;
-    uint8t combo_key;
+    uint8_t i;
+    uint8_t combo_key;
     
     // 先处理 KEY1 的特殊逻辑（支持组合键）
     if (Keys[0].state == KEY_STATE_LONG && Key1LongPressed) {
@@ -157,8 +157,8 @@ void Key_Loop(void)
                 // 组合键状态，等待所有按键释放
                 if (pin_val) {
                     // 检查是否所有按键都释放了
-                    uint8t all_released = 1;
-                    uint8t j;
+                    uint8_t all_released = 1;
+                    uint8_t j;
                     for (j = 0; j < KEY_NUM; j++) {
                         if (!ReadKeyPin(Keys[j].pin_num)) {
                             all_released = 0;

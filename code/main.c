@@ -6,18 +6,18 @@
 #include "config/EEPROM.h"
 #include "rda5807/RDA5807M.h"
 #include "led/myLed.h"
-#include "time0/time0.h"
+#include "time/time0.h"
 #include "key/key.h"
 
 // 搜索触发==1，触发时睡眠模式==11
-uint8t search_SELLP_flag = 0;
+uint8_t search_SELLP_flag = 0;
 
 // 按键触发功能
 void userInput()
 {
-	uint8t snr = 6;
+	uint8_t snr = 6;
 	// 获取按键值，获取后将按键值重置为0;
-	uint8t Key_NUM = POP_KEY();
+	uint8_t Key_NUM = POP_KEY();
 	if (!Key_NUM) // 用户没有输入
 	{
 		return;
@@ -31,7 +31,7 @@ void userInput()
 	// K12 设置省电模式（一定时间后关闭数码管）
 	if (Key_NUM == 12)
 	{
-		Led_CHANGE_SLEEP_MODE();
+		LED_CHANGE_SLEEP_MODE();
 	}
 
 	// 自动搜台+snr
@@ -73,7 +73,7 @@ void userInput()
 	// 自动搜台 取消
 	if (search_SELLP_flag > 0 && Key_NUM == 3)
 	{
-		uint8t was_sleep_mode = (search_SELLP_flag == 11);
+		uint8_t was_sleep_mode = (search_SELLP_flag == 11);
 		search_SELLP_flag = 0;
 		DISPLAY_type = 10;
 		if (was_sleep_mode)
@@ -86,7 +86,7 @@ void userInput()
 	// 自动搜台 确认开始
 	if (search_SELLP_flag > 0 && Key_NUM == 4)
 	{
-		uint8t was_sleep_mode = (search_SELLP_flag == 11);
+		uint8_t was_sleep_mode = (search_SELLP_flag == 11);
 		// 开始自动搜台
 		RDA5807M_Search_Automatic();
 		LED_FRE_REAL = sys_freq;
@@ -128,7 +128,7 @@ void userInput()
 	{
 		LED_SEEK_D = 1;	   // 数码频率改变方向
 		LED_HAND_MARK = 0; // 手动搜台
-		resetSleepTime();  // 数码重置熄灭时间
+		LED_RESET_SLEEP_TIME();  // 数码重置熄灭时间
 		sys_freq = RDA5807M_Seek(1);
 		return;
 	}
@@ -138,7 +138,7 @@ void userInput()
 	{
 		LED_SEEK_D = 0;	   // 数码频率改变方向
 		LED_HAND_MARK = 0; // 手动搜台
-		resetSleepTime();  // 数码重置熄灭时间
+		LED_RESET_SLEEP_TIME();  // 数码重置熄灭时间
 		sys_freq = RDA5807M_Seek(0);
 		return;
 	}
@@ -147,7 +147,7 @@ void userInput()
 	if (Key_NUM == 22)
 	{
 		DISPLAY_type = 1; // 数码管显示音量
-		resetSleepTime(); // 数码重置熄灭时间
+		LED_RESET_SLEEP_TIME(); // 数码重置熄灭时间
 		RDA5807M_CHANGE_MUTE();
 		return;
 	}
@@ -156,7 +156,7 @@ void userInput()
 	if (Key_NUM == 1)
 	{
 		DISPLAY_type = 1; // 数码管显示音量
-		resetSleepTime(); // 数码重置熄灭时间
+		LED_RESET_SLEEP_TIME(); // 数码重置熄灭时间
 		// 最大音量15
 		if (sys_vol + 1 < 16)
 		{
@@ -168,7 +168,7 @@ void userInput()
 	if (Key_NUM == 2)
 	{
 		DISPLAY_type = 1; // 数码管显示音量
-		resetSleepTime(); // 数码重置熄灭时间
+		LED_RESET_SLEEP_TIME(); // 数码重置熄灭时间
 		// 最小音量1
 		if (sys_vol > 0)
 		{
@@ -189,7 +189,7 @@ void userInput()
 			++sys_radio_index;
 		}
 		LED_HAND_MARK = 1; // 切换列表台
-		resetSleepTime();  // 数码重置熄灭时间
+		LED_RESET_SLEEP_TIME();  // 数码重置熄灭时间
 		RDA5807M_Set_Freq(CONF_GET_RADIO_INDEX(sys_radio_index));
 		return;
 	}
@@ -207,7 +207,7 @@ void userInput()
 		}
 
 		LED_HAND_MARK = 1; // 切换列表台
-		resetSleepTime();  // 数码重置熄灭时间
+		LED_RESET_SLEEP_TIME();  // 数码重置熄灭时间
 		RDA5807M_Set_Freq(CONF_GET_RADIO_INDEX(sys_radio_index));
 		return;
 	}
@@ -227,7 +227,7 @@ void main()
 
 	if (CONF_SYS_INIT()) // 加载上一次系统配置,返回是否需要自动搜台
 	{
-		uint8t need_restore_sleep = 0;
+		uint8_t need_restore_sleep = 0;
 		if (!sys_sleep_mode)
 		{
 			sys_sleep_mode = 1;
@@ -263,7 +263,7 @@ void main()
 void Timer0_Rountine(void) interrupt 1
 {
 	// 循环次数记数
-	static uint16t T0Count2;
+	static uint16_t T0Count2;
 	Led_Loop();
 	Key_Loop();
 

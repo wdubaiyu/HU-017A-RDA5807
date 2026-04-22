@@ -23,27 +23,27 @@
 /**
  * 擦除一个扇区
  */
-void IapEraseSector(uint16t addr);
+void IapEraseSector(uint16_t addr);
 
 /**
  * 读取一个字节
  * @param addr 读取地址
  */
 
-uint8t IapReadByte(uint16t addr);
+uint8_t IapReadByte(uint16_t addr);
 
 /**
  * 读取 指定连续sizeOf(dat)字节
  * @param addr 读取地址
  */
 
-void IapReadArrayByte(uint16t addr, uint8t *dat);
+void IapReadArrayByte(uint16_t addr, uint8_t *dat);
 
 /**
  * 不擦除 写一字节
  * @param addr 写入地址
  * @param dat 8位 一字节数据
  */
-void IapProgramByte(uint16t addr, uint8t dat);
+void IapProgramByte(uint16_t addr, uint8_t dat);
 
 #endif

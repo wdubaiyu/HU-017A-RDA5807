@@ -1,7 +1,6 @@
 #include "stc15.h"
 #include <intrins.h>
 #include "EEPROM.H"
-#include "Delay.H"
 
 #define CMD_READ 1    // IAP字节读命令
 #define CMD_PROGRAM 2 // IAP字节编程命令
@@ -31,7 +30,7 @@ void IapIdle()
 /*----------------------------
 扇区擦除
 ----------------------------*/
-void IapEraseSector(uint16t addr)
+void IapEraseSector(uint16_t addr)
 {
     IAP_CONTR = ENABLE_IAP; // 使能IAP
     IAP_CMD = CMD_ERASE;    // 设置IAP命令
@@ -47,9 +46,9 @@ void IapEraseSector(uint16t addr)
  * 读一个字节
  * @param  地址
  */
-uint8t IapReadByte(uint16t addr)
+uint8_t IapReadByte(uint16_t addr)
 {
-    uint8t dat;             // 数据缓冲区
+    uint8_t dat;             // 数据缓冲区
     IAP_CONTR = ENABLE_IAP; // 使能IAP
     IAP_CMD = CMD_READ;     // 设置IAP命令
     IAP_ADDRL = addr;       // 设置IAP低地址
@@ -66,10 +65,10 @@ uint8t IapReadByte(uint16t addr)
  * 读取 指定连续sizeOf(dat)字节
  * @param addr 读取地址
  */
-void IapReadArrayByte(uint16t addr, uint8t *dat)
+void IapReadArrayByte(uint16_t addr, uint8_t *dat)
 {
-    uint8t i;
-    uint16t temp_addr;
+    uint8_t i;
+    uint16_t temp_addr;
     // EA = 0;
 
     IAP_CONTR = ENABLE_IAP; // 使能IAP
@@ -94,7 +93,7 @@ void IapReadArrayByte(uint16t addr, uint8t *dat)
 /*----------------------------
 写一字节数据到ISP/IAP/EEPROM区域
 ----------------------------*/
-void IapProgramByte(uint16t addr, uint8t dat)
+void IapProgramByte(uint16_t addr, uint8_t dat)
 {
     IAP_CONTR = ENABLE_IAP; // 使能IAP
     IAP_CMD = CMD_PROGRAM;  // 设置IAP命令
