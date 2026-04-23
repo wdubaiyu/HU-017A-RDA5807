@@ -1,8 +1,9 @@
 #ifndef _I2C_H_
 #define _I2C_H_
 
-#include <intrins.h>
+#include "../type.h"
 
+void I2C_Init(void);
 void I2C_Start(void);
 void I2C_End(void);
 void IIC_Send_ACK(uint8_t ack);

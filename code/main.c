@@ -1,284 +1,413 @@
+#include "config/Config.h"
+#include "delay/Delay.h"
+#include "key/key.h"
+#include "led/myLed.h"
+#include "rda5807/I2C.h"
+#include "rda5807/RDA5807M.h"
 #include "stc15.h"
 #include "stdio.h"
-#include "Delay.h"
-#include "UART.h"
-#include "config/Config.h"
-#include "config/EEPROM.h"
-#include "rda5807/RDA5807M.h"
-#include "led/myLed.h"
-#include "time/time0.h"
-#include "key/key.h"
+#include "time/time.h"
+#include "uart/UART.h"
 
-// 搜索触发==1，触发时睡眠模式==11
-uint8_t search_SELLP_flag = 0;
+// （自动搜台设置==11）
+// （定时关机设置==21）
+// （设置band==31）
+// （设置重置EEPROM==41）
+uint8_t key_function_flag;
+
+// 电源状态（0正常，1关机倒计时，2已关机）
+uint8_t POWER_STATUS = 0x00;
+uint16_t timed_stanby_count;
+// 写动态配置(是否需要保存配置到EEPROM) =0x0FD0 时触发写操作，<0x0FD0时计数加一
+uint16_t timed_config_write = 0xFFFF;
+
+bit rssi_read_flag;
+
+// 触发写配置（延迟约4秒后执行）
+//重置计数器为0 从头开始计数
+void trigger_write() { timed_config_write = 0x0000; }
+/**
+ * 启动收音函数
+ */
+void InitSystem() {
+  uint8_t conf_select = 0;
+  POWER_STATUS = 0x00;
+  Timer2_Stop();
+  // 读取系统持久化配置，返回是否需要自动搜台
+  conf_select = CONF_SYS_INIT();
+  key_function_flag = 0x00;
+  LED_TIMED_STANDBY = 0x1E;
+
+  // printf("conf_select %bu \r\n", conf_select);
+  // 打开数码管显示和按键扫描
+  Timer0_Init();
+  EA = 1;
+
+  if (conf_select == 1) {
+    // 配置band
+    key_function_flag = 31;
+    LED_SET_DISPLY_TYPE(104);
+    return;
+  }
+
+  // 初始化收音机
+  Delay(300); // 等待收音机芯片上电稳定后再初始化
+  RDA5807M_init();
+
+  LED_RESET_SLEEP_TIME();
+
+  if (conf_select == 2) { // 自动收台
+    RDA5807M_Search_Automatic();
+  }
+  // 播放上次关机时的电台
+  LED_FRE_REAL = sys_freq;
+  LED_SET_DISPLY_TYPE(10);
+}
 
 // 按键触发功能
-void userInput()
-{
-	uint8_t snr = 6;
-	// 获取按键值，获取后将按键值重置为0;
-	uint8_t Key_NUM = POP_KEY();
-	if (!Key_NUM) // 用户没有输入
-	{
-		return;
-	}
+void userInput(uint8_t Key_num) {
+  // 有按键操作时重置睡眠时间
+  LED_RESET_SLEEP_TIME();
 
-	// if (Key_NUM)
-	// {
-	// printf("key:%bd\r\n", Key_NUM);
-	// }
+  if (key_function_flag > 10) // 功能菜单触发后不响应基础操作
+  {
+    // 触发功能后按了V+
+    if (Key_num == 1) {
+      if (key_function_flag == 11) {
+        LED_SNR = RDA5807M_Read_SNR();
+        if (LED_SNR == 15) {
+          LED_SNR = 0;
+        } else {
+          LED_SNR++;
+        }
+        RDA5807M_Set_SNR(LED_SNR);
+      }
 
-	// K12 设置省电模式（一定时间后关闭数码管）
-	if (Key_NUM == 12)
-	{
-		LED_CHANGE_SLEEP_MODE();
-	}
+      if (key_function_flag == 21) {
+        LED_TIMED_STANDBY_U();
+      }
 
-	// 自动搜台+snr
-	if (search_SELLP_flag > 0 && Key_NUM == 1)
-	{
-		snr = RDA5807M_Read_SNR();
-		if (snr == 15)
-		{
-			snr = 0;
-		}
-		else
-		{
-			snr++;
-		}
-		RDA5807M_Set_SNR(snr);
-		// 设置显示屏幕
-		LED_SNR = snr;
-		return;
-	}
+      if (key_function_flag == 31) {
+        if (sys_band < 4) {
+          sys_band++;
+        }
+      }
 
-	// 自动搜台-snr
-	if (search_SELLP_flag > 0 && Key_NUM == 2)
-	{
-		snr = RDA5807M_Read_SNR();
-		if (snr == 0)
-		{
-			snr = 15;
-		}
-		else
-		{
-			snr--;
-		}
-		RDA5807M_Set_SNR(snr);
-		// 设置显示屏幕
-		LED_SNR = snr;
-		return;
-	}
+      return;
+    }
 
-	// 自动搜台 取消
-	if (search_SELLP_flag > 0 && Key_NUM == 3)
-	{
-		uint8_t was_sleep_mode = (search_SELLP_flag == 11);
-		search_SELLP_flag = 0;
-		DISPLAY_type = 10;
-		if (was_sleep_mode)
-		{
-			sys_sleep_mode = 0;
-		}
-		return;
-	}
+    // 触发功能后按了V-
+    if (Key_num == 2) {
+      if (key_function_flag == 11) {
+        LED_SNR = RDA5807M_Read_SNR();
+        if (LED_SNR == 0) {
+          LED_SNR = 15;
+        } else {
+          LED_SNR--;
+        }
+        RDA5807M_Set_SNR(LED_SNR);
+      }
 
-	// 自动搜台 确认开始
-	if (search_SELLP_flag > 0 && Key_NUM == 4)
-	{
-		uint8_t was_sleep_mode = (search_SELLP_flag == 11);
-		// 开始自动搜台
-		RDA5807M_Search_Automatic();
-		LED_FRE_REAL = sys_freq;
-		search_SELLP_flag = 0;
-		if (was_sleep_mode)
-		{
-			sys_sleep_mode = 0;
-		}
-		LED_HAND_MARK = 1; //  数码管设置为列表换台
-		return;
-	}
+      if (key_function_flag == 21) {
+        LED_TIMED_STANDBY_D();
+      }
 
-	// K13 自动搜台 触发
-	if (Key_NUM == 13)
-	{
-		// printf("auto serach radio ?\r\n");
-		LED_SNR = RDA5807M_Read_SNR();
-		search_SELLP_flag = 1;
-		DISPLAY_type = 14; // 显示snr设置
-		if (!sys_sleep_mode)
-		{
-			sys_sleep_mode = 1;
-			search_SELLP_flag = 11;
-		}
+      if (key_function_flag == 31) {
+        if (sys_band > 0) {
+          sys_band--;
+        }
+      }
+      return;
+    }
 
-		return;
-	}
+    // 触发功能后按了F+  (取消)
+    if (Key_num == 3) {
+      //		    自动收台不需要调整
+      //			if (key_function_flag == 11)
+      //			{
+      //			}
 
-	// K14 切换rssi显示
-	if (Key_NUM == 14)
-	{
-		LED_RSSI = RDA5807M_Read_RSSI();
-		DISPLAY_type = 0x02;
-		return;
-	}
+      if (key_function_flag == 21) {
+        POWER_STATUS = 0;
+      }
 
-	// K33 手动搜下一个台
-	if (Key_NUM == 33)
-	{
-		LED_SEEK_D = 1;	   // 数码频率改变方向
-		LED_HAND_MARK = 0; // 手动搜台
-		LED_RESET_SLEEP_TIME();  // 数码重置熄灭时间
-		sys_freq = RDA5807M_Seek(1);
-		return;
-	}
+      if (key_function_flag == 31) {
+        return;
+      }
 
-	// K44 手动搜上一个台
-	if (Key_NUM == 44)
-	{
-		LED_SEEK_D = 0;	   // 数码频率改变方向
-		LED_HAND_MARK = 0; // 手动搜台
-		LED_RESET_SLEEP_TIME();  // 数码重置熄灭时间
-		sys_freq = RDA5807M_Seek(0);
-		return;
-	}
+      // 取消功能直接展示频率
+      LED_SET_DISPLY_TYPE(0);
+      key_function_flag = 0;
+      return;
+    }
 
-	// K22 V-长按
-	if (Key_NUM == 22)
-	{
-		DISPLAY_type = 1; // 数码管显示音量
-		LED_RESET_SLEEP_TIME(); // 数码重置熄灭时间
-		RDA5807M_CHANGE_MUTE();
-		return;
-	}
+    // 触发功能后按了F- （确认）
+    if (Key_num == 4) {
+      if (key_function_flag == 11) {
+        RDA5807M_Search_Automatic();
+      }
 
-	// V+
-	if (Key_NUM == 1)
-	{
-		DISPLAY_type = 1; // 数码管显示音量
-		LED_RESET_SLEEP_TIME(); // 数码重置熄灭时间
-		// 最大音量15
-		if (sys_vol + 1 < 16)
-		{
-			RDA5807M_Set_Volume(sys_vol + 1);
-		}
-		return;
-	}
-	// V-
-	if (Key_NUM == 2)
-	{
-		DISPLAY_type = 1; // 数码管显示音量
-		LED_RESET_SLEEP_TIME(); // 数码重置熄灭时间
-		// 最小音量1
-		if (sys_vol > 0)
-		{
-			RDA5807M_Set_Volume(sys_vol - 1);
-		}
-		return;
-	}
-	// F+
-	if (Key_NUM == 3)
-	{
+      if (key_function_flag == 21) {
+        // 定时关机大于0才能确认
+        if (LED_TIMED_STANDBY > 0) {
+          POWER_STATUS = 1;
+          timed_stanby_count = 0;
+          Timer2_Init(); // 定时器开始计时
+          LED_SET_DISPLY_TYPE(1);
+        } else {
+          POWER_STATUS = 0;
 
-		if (sys_radio_index == sys_radio_index_max)
-		{
-			sys_radio_index = 0;
-		}
-		else
-		{
-			++sys_radio_index;
-		}
-		LED_HAND_MARK = 1; // 切换列表台
-		LED_RESET_SLEEP_TIME();  // 数码重置熄灭时间
-		RDA5807M_Set_Freq(CONF_GET_RADIO_INDEX(sys_radio_index));
-		return;
-	}
-	// F-
-	if (Key_NUM == 4)
-	{
+          LED_SET_DISPLY_TYPE(0);
+        }
+      }
 
-		if (sys_radio_index == 0)
-		{
-			sys_radio_index = sys_radio_index_max;
-		}
-		else
-		{
-			--sys_radio_index;
-		}
+      if (key_function_flag == 31) {
+        //  band设置
+        CONF_RADIO_ERASE();
+        InitSystem();
+        return;
+      }
 
-		LED_HAND_MARK = 1; // 切换列表台
-		LED_RESET_SLEEP_TIME();  // 数码重置熄灭时间
-		RDA5807M_Set_Freq(CONF_GET_RADIO_INDEX(sys_radio_index));
-		return;
-	}
+      if (key_function_flag == 41) {
+        //  重置eeprom
+        RDA5807M_OFF();
+        CONF_RESET();
+        InitSystem();
+        return;
+      }
+
+      key_function_flag = 0;
+      return;
+    }
+
+    // 如果触发了功能则不进行下面的 操作
+    return;
+  }
+
+  ////////////////////功能触发区///////////////////
+
+  // K11 设置定时关机
+  if (Key_num == 11) {
+    key_function_flag = 21;
+    // 设置定时关机时，取消上一次设定
+    POWER_STATUS = 0;
+    Timer2_Stop(); // 定时器停止计时
+    LED_SET_DISPLY_TYPE(102);
+    return;
+  }
+
+  // K12 设置省电模式（一定时间后关闭数码管）
+  if (Key_num == 12) {
+    LED_CHANGE_SLEEP_MODE();
+    trigger_write();
+    return;
+  }
+
+  // K13 自动搜台 触发
+  if (Key_num == 13) {
+    LED_SNR = RDA5807M_Read_SNR();
+    key_function_flag = 11;
+    LED_SET_DISPLY_TYPE(101); // 显示snr设置
+    return;
+  }
+
+  // K14 切换POLL显示
+  if (Key_num == 14) {
+    cycle_in_freq_rssi = ~cycle_in_freq_rssi;
+    LED_SET_DISPLY_TYPE(5);
+    trigger_write();
+    return;
+  }
+
+  // K22 V-长按
+  if (Key_num == 22) {
+    LED_SET_DISPLY_TYPE(4); // 数码管显示音量
+    RDA5807M_SET_MUTE();
+    return;
+  }
+
+  /////////////////常用操作区域
+  // K33 手动搜下一个台
+  if (Key_num == 33) {
+    sys_freq = RDA5807M_Seek(1);
+    return;
+  }
+
+  // K44 手动搜上一个台
+  if (Key_num == 44) {
+    sys_freq = RDA5807M_Seek(0);
+    return;
+  }
+
+  // K34 回复出厂设置
+  if (Key_num == 34) {
+    key_function_flag = 41;
+    LED_SET_DISPLY_TYPE(103); // 显示恢复出厂设置确认
+    return;
+  }
+
+  // K3 V+
+  if (Key_num == 1) {
+    LED_SET_DISPLY_TYPE(4); // 数码管显示音量
+    // 最大音量15
+    if (sys_vol < 15) {
+      RDA5807M_Set_Volume(sys_vol + 1);
+      trigger_write();
+    }
+    return;
+  }
+  // K4 V-
+  if (Key_num == 2) {
+    LED_SET_DISPLY_TYPE(4); // 数码管显示音量
+    // 最小音量1
+    if (sys_vol > 0) {
+      RDA5807M_Set_Volume(sys_vol - 1);
+      trigger_write();
+    }
+    return;
+  }
+
+  // k2 F+
+  if (Key_num == 3) {
+    if (sys_radio_index_max == 0) {
+      return;
+    }
+
+    if (sys_radio_index == sys_radio_index_max) {
+      sys_radio_index = 0;
+    } else {
+      ++sys_radio_index;
+    }
+
+    LED_FRE_REAL = CONF_GET_FREQ_BY_INDEX(sys_radio_index);
+    RDA5807M_Set_Freq(LED_FRE_REAL);
+    trigger_write();
+    // printf("sys_freq  %bu  %d\r\n", sys_radio_index, sys_freq);
+    return;
+  }
+  // k1 F-
+  if (Key_num == 4) {
+    if (sys_radio_index_max == 0) {
+      return;
+    }
+
+    if (sys_radio_index == 0) {
+      sys_radio_index = sys_radio_index_max;
+    } else {
+      --sys_radio_index;
+    }
+
+    LED_FRE_REAL = CONF_GET_FREQ_BY_INDEX(sys_radio_index);
+    RDA5807M_Set_Freq(LED_FRE_REAL);
+    trigger_write();
+    // printf("sys_freq  %bu  %d\r\n", sys_radio_index, sys_freq);
+    return;
+  }
 }
 
-void main()
-{
-	// // 初始化串口
-	// UartInit();
-	// 初始化收音机
-	RDA5807M_init();
-	Delay(10);
-	LED_FRE_REAL = sys_freq;
+void main() {
+  uint8_t Key_num;
 
-	// 打开数码管显示、键盘轮询
-	Timer0Init();
+  I2C_Init();
+  // UartInit();
+  // printf("UartInit...\r\n");
+  InitSystem();
 
-	if (CONF_SYS_INIT()) // 加载上一次系统配置,返回是否需要自动搜台
-	{
-		uint8_t need_restore_sleep = 0;
-		if (!sys_sleep_mode)
-		{
-			sys_sleep_mode = 1;
-			need_restore_sleep = 1;
-		}
-		RDA5807M_Search_Automatic();
-		LED_FRE_REAL = sys_freq;
-		if (need_restore_sleep)
-		{
-			sys_sleep_mode = 0;
-		}
-		LED_HAND_MARK = 1; //  数码管设置为列表换台
-	}
-	else
-	{
-		RDA5807M_Set_Freq(sys_freq);
-	}
+  while (1) {
 
-	// 设置系统音量
-	RDA5807M_Set_Volume(sys_vol);
+    // 是否切换到显示RSSI
+    if (rssi_read_flag) {
+      LED_RSSI = RDA5807M_Read_RSSI();
+      LED_SET_DISPLY_TYPE(2);
+      LED_DISPLAY_REC_COUNT = LED_REC_TIME / 2;
+      rssi_read_flag = 0; // 重置标记
+    }
 
-	// printf("setup complete\r\n");
+    // 读取用户按键输入
+    Key_num = POP_KEY();
 
-	while (1)
-	{
-		userInput();
-	}
+    // 在关机中
+    if (POWER_STATUS == 2) {
+      // 关机中长按F-开机
+      if (Key_num == 44) {
+        InitSystem();
+      }
+
+      continue;
+    }
+
+    // 关机时间到
+    if (POWER_STATUS == 1 && LED_TIMED_STANDBY < 1) {
+      POWER_STATUS = 2;
+      Timer2_Stop(); // 定时器停止计时
+      RDA5807M_OFF();
+      P20 = P21 = P22 = P23 = 1; // 关闭数码管
+      continue;
+    }
+
+    // 按键有效,响应用户操作
+    if (Key_num) {
+      // printf("Key_num.. %d \n", (int)Key_num);
+      userInput(Key_num);
+    }
+  }
 }
 
-/**
- * 定时器零的中断函数
- */
-void Timer0_Rountine(void) interrupt 1
-{
-	// 循环次数记数
-	static uint16_t T0Count2;
-	Led_Loop();
-	Key_Loop();
+void Timer0_Isr(void) interrupt 1 {
 
-	// 不是显示在频率模式中,开始记录次数（大概 4ms*1000）后显示频率
-	if (DISPLAY_type < 10)
-	{ // 检查是否需要重置标记位
+  uint8_t led_type = LED_GET_DISPLY_TYPE();
 
-		if (++T0Count2 >= 4000)
-		{
-			T0Count2 = 0;
-			DISPLAY_type = 10;
-		}
-	}
+  // 写动态配置计数
+  if (timed_config_write < 0x0FD0) {
+    timed_config_write += 1;
+  } else if (timed_config_write == 0x0FD0) {
+    // 已处理写配置
+    CONF_WRITE();
+    timed_config_write = 0xFFFF;
+  }
 
-	TL0 = 0x88; // 设置定时初值
-	TH0 = 0x96; // 设置定时初值
-	TF0 = 0;	// 清除TF0标志
+
+  // 轮询按键
+  Key_Loop();
+
+  // 不是关机状态才显示数码管
+  if (POWER_STATUS < 2) {
+    // 数码管关闭不执行和数码管相关的操作
+    if (Led_Loop()) {
+      TL0 = 0x66; // 设置定时初始值
+      TH0 = 0xFC; // 设置定时初始值
+      return;
+    }
+
+    // 数码管处于显示中，需要切换为freq显示
+    if (led_type != 10) // 10是频率显示
+    {
+      if (led_type < 100) // 是否需要显示恢复为频率
+      {
+        if (++LED_DISPLAY_REC_COUNT >= LED_REC_TIME) {
+          LED_SET_DISPLY_TYPE(10);
+          // 数码管恢复显示时触发持久化操作（不包括FREQ——index）
+        }
+      }
+    } else if (cycle_in_freq_rssi) // 显示的是10频率，开启了rssi轮询显示
+    {
+      if (++LED_DISPLAY_REC_COUNT >= LED_REC_TIME) {
+        // 打开读取rssi功能
+        rssi_read_flag = 1;
+      }
+    }
+  }
+
+  TL0 = 0x66; // 设置定时初始值
+  TH0 = 0xFC; // 设置定时初始值
+}
+
+// 定时关机功能开启,循环减时间
+void Timer2_Isr(void) interrupt 12 {
+  if (POWER_STATUS == 1) {
+    if (++timed_stanby_count >= 3000) {
+      LED_TIMED_STANDBY -= 1; // 减去一分钟
+      timed_stanby_count = 0; // 重新计数
+    }
+  }
 }

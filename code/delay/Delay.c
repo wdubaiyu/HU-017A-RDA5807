@@ -1,4 +1,4 @@
-#include <Delay.h>
+#include "Delay.h"
 #include <intrins.h>
 
 void Delay1ms(void)	//@11.0592MHz
@@ -17,22 +17,16 @@ void Delay1ms(void)	//@11.0592MHz
 }
 
 
-void Delay1us(void)	//@11.0592MHz
-{
-	_nop_();
-	_nop_();
-	_nop_();
-}
 
-void Delay_us_(unsigned int xms)
+void Delay_us_(unsigned int xus)
 {
-	while (xms--)
+	while (xus--)
 	{
-		Delay1us();
+		_nop_();
+		_nop_();
+		_nop_();
 	}
 }
-
-
 
 void Delay(unsigned int xms)
 {
@@ -41,4 +35,3 @@ void Delay(unsigned int xms)
 		Delay1ms();
 	}
 }
-

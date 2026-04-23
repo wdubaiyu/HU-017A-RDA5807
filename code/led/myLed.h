@@ -1,8 +1,8 @@
 #ifndef __MY_LED__
 #define __MY_LED__
 
-#include "config/Config.h"
-#define LED_REC_TIME 0x7D0
+#include "../type.h"
+#define LED_REC_TIME 0x7D0 //依赖于定时器每1ms中断一次
 
 /**
  * 
@@ -14,15 +14,11 @@ extern uint16_t LED_FRE_REAL;
 extern uint16_t LED_DISPLAY_REC_COUNT;
 extern uint8_t LED_RSSI;
 extern uint8_t LED_SNR;
-extern uint8_t LED_TIMED_STANDBY;
-extern uint8_t DISPLAY_type;
-extern bit LED_HAND_MARK;
-
-
+extern uint8_t LED_TIMED_STANDBY; //定时关机分钟数
 extern bit LED_SEEK_D;
 
-// 显示数码管
-void Led_Loop();
+// 显示数码管 返回是否显示 0 显示 1未显示
+bit Led_Loop();
 
 // les 睡眠时间重置
 void LED_RESET_SLEEP_TIME();
@@ -35,4 +31,8 @@ uint8_t LED_GET_DISPLY_TYPE();
 // 省电模式
 void LED_TIMED_STANDBY_U(); //+
 void LED_TIMED_STANDBY_D(); //-
+
+
+void DispayF(uint16_t temp);
 #endif
+

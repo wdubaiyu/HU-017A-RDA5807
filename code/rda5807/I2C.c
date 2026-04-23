@@ -1,6 +1,5 @@
 #include "stc15.h"
-#include "config/Config.h"
-#include "Delay.h"
+#include "../delay/Delay.h"
 #include "I2C.h"
 
 sbit SDA = P2 ^ 4; // 这一个数据线
@@ -14,6 +13,9 @@ void I2C_Delay()
     Delay_us_(10);
 }
 
+void I2C_Init(void){
+    // empty func
+}
 /**
  * @brief 产生I2C起始信号
  * @param 无

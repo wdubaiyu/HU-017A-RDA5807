@@ -230,7 +230,7 @@
               <RCB>
                 <Type>0</Type>
                 <StartAddress>0x0</StartAddress>
-                <Size>0x10000</Size>
+                <Size>0xffff</Size>
               </RCB>
               <RXB>
                 <Type>0</Type>
@@ -369,16 +369,6 @@
               <FilePath>.\main.c</FilePath>
             </File>
             <File>
-              <FileName>Delay.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Delay.c</FilePath>
-            </File>
-            <File>
-              <FileName>Delay.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\Delay.h</FilePath>
-            </File>
-            <File>
               <FileName>Config.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\config\Config.c</FilePath>
@@ -449,14 +439,34 @@
               <FilePath>.\key\Key.h</FilePath>
             </File>
             <File>
-              <FileName>time0.c</FileName>
+              <FileName>UART.c</FileName>
               <FileType>1</FileType>
-              <FilePath>.\time\time0.c</FilePath>
+              <FilePath>.\uart\UART.c</FilePath>
             </File>
             <File>
-              <FileName>time0.h</FileName>
+              <FileName>UART.h</FileName>
               <FileType>5</FileType>
-              <FilePath>.\time\time0.h</FilePath>
+              <FilePath>.\uart\UART.h</FilePath>
+            </File>
+            <File>
+              <FileName>Delay.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\delay\Delay.c</FilePath>
+            </File>
+            <File>
+              <FileName>Delay.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\delay\Delay.h</FilePath>
+            </File>
+            <File>
+              <FileName>time.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\time\time.c</FilePath>
+            </File>
+            <File>
+              <FileName>time.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\time\time.h</FilePath>
             </File>
           </Files>
         </Group>

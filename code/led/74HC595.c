@@ -1,6 +1,6 @@
 #include "stc15.h"
 #include "74HC595.h"
-#include "Delay.h"
+#include "../delay/Delay.h"
 
 sbit RCK = P3 ^ 3; // RCLK P33 74HC595_12  全部移出去(存储时钟)
 sbit SCK = P3 ^ 4; // SCLK P34 74HC595_11  向下移动(移位时钟)
@@ -24,12 +24,12 @@ void _74HC595_WriteByte(unsigned char byte_p)
 	for (i = 0; i < 8; i++)
 	{
 		SER = byte_p & (0x80 >> i);
-		_nop_();  // 30ns数据建立 @33.1776MHz
+		_nop_();  // 30ns数据建立
 		SCK = 1;
-		_nop_();  // 稳定时间 (30ns) @33.1776MHz
+		_nop_();  // 30ns稳定时间
 		SCK = 0;
 	}
 	RCK = 1;
-	_nop_(); _nop_();  // 锁存脉冲宽度 (60ns > 25ns) @33.1776MHz
+	_nop_(); _nop_();  // 锁存脉冲宽度 (60ns > 25ns)
 	RCK = 0;
 }
